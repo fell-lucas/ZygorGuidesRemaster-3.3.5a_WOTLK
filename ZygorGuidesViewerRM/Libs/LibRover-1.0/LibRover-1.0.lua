@@ -4448,13 +4448,9 @@ do
 			local Lib=Lib
 			local self=Lib
 
-			--[[ -- startup moved to ZGV:OnInitialize
 			if event=="ADDON_LOADED" and arg1==addonName then
-				--Lib.ready=true  -- TODO added a ZGV.db check for sanity, test how it is working in real life
-				--Lib:Debug("ADDON_LOADED %s, let's get this show on the road.",addonName)
 				Lib:DoStartup()
 			end
-			--]]
 
 			if not Lib.ready then return end
 

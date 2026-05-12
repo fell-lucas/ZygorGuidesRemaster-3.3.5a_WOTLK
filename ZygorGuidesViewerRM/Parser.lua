@@ -26,7 +26,7 @@ end
 --]]
 
 me.actionmeta = {
-	goto = { skippable = true },
+	["goto"] = { skippable = true },
 	fpath = { skippable = true },
 	home = { skippable = true },
 	hearth = { skippable = true },
@@ -1276,9 +1276,11 @@ function me:ParseEntry(text)
 				if not fun then return nil,err,linecount,chunk end
 				goal.condition_complete_raw=params
 				goal.condition_complete=fun
+			elseif cmd=="notravel" then
+				goal.waypoint_notravel = true
 			elseif cmd=="condition_valid_msg" or cmd=="condition_invalid" or cmd=="condition_end" or cmd=="condition_suggested_race"
 			or cmd=="debug" or cmd=="template" or cmd=="meta" or cmd=="keywords" or cmd=="opt" or cmd=="travelcfg" or cmd=="travelfor"
-			or cmd=="notinsticky" or cmd=="notravel" or cmd=="nowayinzone" or cmd=="autoacceptany" or cmd=="autoturninany"
+			or cmd=="notinsticky" or cmd=="nowayinzone" or cmd=="autoacceptany" or cmd=="autoturninany"
 			or cmd=="noautoaccept" or cmd=="noautogossip" or cmd=="nohearth" or cmd=="nomodels" or cmd=="nomovieskip"
 			or cmd=="noordinal" or cmd=="blizztooltip" or cmd=="usebank" or cmd=="usename" or cmd=="mounts" or cmd=="pets"
 			or cmd=="pet" or cmd=="spec" or cmd=="class" or cmd=="grouprole" or cmd=="region" or cmd=="minizone"

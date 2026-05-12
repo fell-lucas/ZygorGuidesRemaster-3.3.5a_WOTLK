@@ -91,6 +91,8 @@ ZygorGuidesViewer_L("Main", "enUS", function() return {
 	["opt_goalicons_desc"] = "Display icons reflecting completion status.",
 	["opt_goalcolorize"] = "Color completed step lines",
 	["opt_goalcolorize_desc"] = "When completing step lines, colorize them entirely green.",
+	["opt_showguideprogressbar"] = "Show guide progress bar",
+	["opt_showguideprogressbar_desc"] = "Display the guide completion bar at the bottom of the viewer.",
 	["opt_goalbackprogress"] = "Apply colors progressively",
 	["opt_goalbackprogress_desc"] = "Show partial completion as intermediary colors between the incomplete and complete colors.|nIf off, objectives are displayed only using 'incomplete' or 'complete' colors.",
 
@@ -846,6 +848,8 @@ ZygorGuidesViewer_L("Main", "enUS", function() return {
 	["opt_optimization_internal_only"] = "This setting only affects the built-in waypoint arrow when the internal waypointer is active.",
 	["opt_optimization_routing_header"] = "Travel Routing",
 	["opt_optimization_routing_desc"] = "Control how aggressively the built-in travel system calculates and prepares routes.",
+	["opt_travel_use_librover"] = "Use advanced LibRover routing",
+	["opt_travel_use_librover_desc"] = "Use LibRover for guide travel routing when that library is loaded. If this option is disabled, LibRover is not loaded and routing uses the lightweight flight-path fallback.",
 	["opt_pathfinding_speed"] = "Route Calculation Budget",
 	["opt_pathfinding_speed_desc"] = "Controls how much work LibRover does per update while building routes. Lower values reduce CPU spikes; higher values finish recalculations sooner.",
 	["opt_pathfinding_speed_slow"] = "Slow (Lowest CPU)",

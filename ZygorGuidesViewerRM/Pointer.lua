@@ -333,7 +333,7 @@ end
 local function RemasterPickDisplayGoal(baseGoal,step)
 	local function isNavOnly(g) return g and g.action=="goto" and not g.npc end
 	local displayActions = {
-		accept=true, turnin=true, talk=true, goto=true, use=true, buy=true,
+		accept=true, turnin=true, talk=true, ["goto"]=true, use=true, buy=true,
 		get=true, collect=true, goal=true, kill=true, from=true,
 	}
 	local function isActionable(g)
@@ -1921,6 +1921,11 @@ function Pointer.ArrowFrame_OnUpdate(self,elapsed)
 	if not self.waypoint then self:Hide() return end
 	if profile and profile.arrowshow==false then self:Hide() return end
 	if profile.hidearrowwithguide and self.waypoint.type=="way" and not ZGV.Frame:IsVisible() then self:Hide() return end
+	if self.waypoint.type=="route" and self.waypoint.travelDestZone and GetRealZoneText()==self.waypoint.travelDestZone then
+		ZGV.Pointer:RemoveWaypoint(self.waypoint)
+		ZGV:SetWaypoint()
+		return
+	end
 	--if GetCurrentMapContinentAndZone()~=self.waypoint.c then end
 
 	if IsInInstance() then self:Hide() return end

@@ -99,6 +99,7 @@ function me:Options_RegisterDefaults()
 			goalicons = true,
 			goalbackgrounds = true,
 			goalcolorize = false,
+			showguideprogressbar = true,
 			goalbackincomplete = {r=0.6,g=0.0,b=0.0,a=0.7},
 			goalbackprogressing= {r=0.6,g=0.7,b=0.0,a=0.7},
 			goalbackcomplete   = {r=0.2,g=0.7,b=0.0,a=0.7},
@@ -204,6 +205,7 @@ function me:Options_RegisterDefaults()
 
 			-- LibRover pathfinding
 			pathfinding = true,
+			travel_use_librover = true,
 			pathfinding_speed = 1,
 			pathfinding_comfort = 0,
 			pathfinding_preferfly = true,
@@ -1644,6 +1646,20 @@ function me:Options_DefineOptions()
 				stepArgs.showcountsteps.order = 2.2
 				stepArgs.showcountsteps.width = "normal"
 			end
+			stepArgs.showguideprogressbar = {
+				name = L["opt_showguideprogressbar"],
+				desc = L["opt_showguideprogressbar_desc"],
+				type = "toggle",
+				order = 2.25,
+				width = "double",
+				get = function() return self.db.profile.showguideprogressbar ~= false end,
+				set = function(i,v)
+					Setter_Simple(i,v)
+					if self.UpdateGuideProgressWidgets then self:UpdateGuideProgressWidgets() end
+					if self.ResizeFrame then self:ResizeFrame() end
+					if self.UpdateFrame then self:UpdateFrame(true) end
+				end,
+			}
 			stepWindowArgs.showcountsteps = nil
 			stepWindowArgs.skin = nil
 			stepWindowArgs.sep_window_row1 = nil
@@ -2001,8 +2017,28 @@ function me:Options_DefineOptions()
 				type = "description",
 				name = L["opt_optimization_routing_desc"],
 			},
-			pathfinding_speed = {
+			travel_use_librover = {
 				order = 22,
+				type = "toggle",
+				name = L["opt_travel_use_librover"],
+				desc = L["opt_travel_use_librover_desc"],
+				width = "full",
+				get = function()
+					return self.LibRover and self.db.profile.travel_use_librover == true
+				end,
+				set = function(_,v)
+					self.db.profile.travel_use_librover = v == true
+					if not self.db.profile.travel_use_librover and self.ClearLibRoverPath then
+						self:ClearLibRoverPath()
+					end
+					self:SetWaypoint()
+				end,
+				disabled = function()
+					return not self.LibRover
+				end,
+			},
+			pathfinding_speed = {
+				order = 23,
 				type = "select",
 				name = L["opt_pathfinding_speed"],
 				desc = L["opt_pathfinding_speed_desc"],
@@ -2025,15 +2061,18 @@ function me:Options_DefineOptions()
 					end
 				end,
 				disabled = function()
-					return not self.db.profile.pathfinding
+					return not self.LibRover or not self.db.profile.pathfinding or self.db.profile.travel_use_librover ~= true
 				end,
 			},
 			travel_do_full_linking_at_startup = {
-				order = 23,
+				order = 24,
 				type = "toggle",
 				name = L["opt_travel_full_linking_startup"],
 				desc = L["opt_travel_full_linking_startup_desc"],
 				width = "full",
+				disabled = function()
+					return not self.LibRover or self.db.profile.travel_use_librover ~= true
+				end,
 			},
 			memory_header = {
 				order = 30,

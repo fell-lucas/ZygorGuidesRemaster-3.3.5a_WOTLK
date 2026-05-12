@@ -27,6 +27,8 @@ do
 
 		Lib.master = { }
 		Lib.saved = { }
+		Lib.taxipoints = _L.LibTaxiData and _L.LibTaxiData.taxipoints or Lib.taxipoints or {}
+		_L.LibTaxiData = nil
 
 		Lib.TaxiNames_Local = nil
 		Lib.TaxiNames_English = nil

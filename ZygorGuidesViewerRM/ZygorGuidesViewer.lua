@@ -1150,6 +1150,7 @@ local _G,assert,table,string,tinsert,tonumber,tostring,type,ipairs,pairs,setmeta
 --local Dewdrop = AceLibrary("Dewdrop-2.0")
 
 me.LibTaxi = LibStub("LibTaxi-1.0")
+me.LibRover = _G.LibRover or me.LibRover
 
 
 me.icons = {
@@ -2693,7 +2694,9 @@ function me:GetCompactGuideLayoutMetrics()
 		metrics.lineSpacing = 0
 		metrics.stepTopPadding = 0
 		metrics.stepBottomPadding = 0
-		metrics.progressReserve = 14
+		if self.db.profile.showguideprogressbar ~= false then
+			metrics.progressReserve = 14
+		end
 		metrics.progressBottomOffset = 6
 		metrics.lastLineReserve = 0
 		metrics.iconHeight = math.max(fontsize + 1, 12)
@@ -3009,7 +3012,7 @@ function me:UpdateGuideProgressWidgets()
 	local bar = self.GuideProgressBar
 	if not bar then return end
 
-	local show = total > 0 and self.CurrentGuide and self.db and self.db.profile and self.db.profile.displaymode == "guide"
+	local show = total > 0 and self.CurrentGuide and self.db and self.db.profile and self.db.profile.displaymode == "guide" and self.db.profile.showguideprogressbar ~= false
 	local stepframe = self:GetGuideProgressAnchorStepFrame()
 	if not show or not stepframe or not stepframe:IsShown() then
 		bar:Hide()
@@ -7947,6 +7950,7 @@ end
 function me:PLAYER_CONTROL_GAINED()
 	GetRealZoneText()
 	self:TryToCompleteStep(true)
+	self:SetWaypoint()
 end
 
 function me:FindData(array,what,data)

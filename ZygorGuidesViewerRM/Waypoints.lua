@@ -94,8 +94,292 @@ local TRANSIT_ROUTES = {
 	{3, 1, "Horde", "portal", "Use the Orgrimmar portal in Shattrath", "Shattrath City", 56.8, 49.5},
 }
 
+local TAXI_POINTS = {
+	["Borean Tundra"] = {
+		{name="Fizzcrank Airstrip", faction="Alliance", x=56.57, y=20.06},
+		{name="Valiance Keep", faction="Alliance", x=58.96, y=68.29},
+		{name="Warsong Hold", faction="Horde", x=40.36, y=51.40},
+		{name="Bor'gorok Outpost", faction="Horde", x=49.65, y=11.05},
+		{name="Taunka'le Village", faction="Horde", x=77.76, y=37.77},
+		{name="Transitus Shield", faction="Neutral", x=33.13, y=34.44},
+		{name="Amber Ledge", faction="Neutral", x=45.32, y=34.49},
+		{name="Unu'pe", faction="Neutral", x=78.54, y=51.53},
+	},
+	["Crystalsong Forest"] = {
+		{name="Windrunner's Overlook", faction="Alliance", x=72.17, y=80.97},
+		{name="Sunreaver's Command", faction="Horde", x=78.54, y=50.41},
+	},
+	["Dalaran"] = {
+		{name="Dalaran", faction="Neutral", x=72.18, y=45.77},
+	},
+	["Dragonblight"] = {
+		{name="Stars' Rest", faction="Alliance", x=29.18, y=55.32},
+		{name="Fordragon Hold", faction="Alliance", x=39.52, y=25.91},
+		{name="Wintergarde Keep", faction="Alliance", x=77.00, y=49.79},
+		{name="Agmar's Hammer", faction="Horde", x=37.51, y=45.76},
+		{name="Kor'kron Vanguard", faction="Horde", x=43.85, y=16.94},
+		{name="Venomspite", faction="Horde", x=76.48, y=62.21},
+		{name="Wyrmrest Temple", faction="Neutral", x=60.32, y=51.55},
+		{name="Moa'ki", faction="Neutral", x=48.51, y=74.39},
+	},
+	["Grizzly Hills"] = {
+		{name="Amberpine Lodge", faction="Alliance", x=31.31, y=59.11},
+		{name="Westfall Brigade", faction="Alliance", x=59.89, y=26.68},
+		{name="Conquest Hold", faction="Horde", x=21.99, y=64.43},
+		{name="Camp Oneqwah", faction="Horde", x=64.96, y=46.93},
+	},
+	["Howling Fjord"] = {
+		{name="Fort Wildervar", faction="Alliance", x=60.06, y=16.11},
+		{name="Valgarde Port", faction="Alliance", x=59.79, y=63.24},
+		{name="Westguard Keep", faction="Alliance", x=31.26, y=43.98},
+		{name="Camp Winterhoof", faction="Horde", x=49.56, y=11.59},
+		{name="Vengeance Landing", faction="Horde", x=79.04, y=29.71},
+		{name="New Agamand", faction="Horde", x=52.01, y=67.38},
+		{name="Apothecary Camp", faction="Horde", x=25.98, y=25.07},
+		{name="Kamagua", faction="Neutral", x=24.66, y=57.77},
+	},
+	["Icecrown"] = {
+		{name="The Shadow Vault", faction="Alliance", x=43.74, y=24.38},
+		{name="The Shadow Vault", faction="Horde", x=43.74, y=24.38},
+		{name="Argent Tournament Grounds", faction="Neutral", x=72.59, y=22.61},
+		{name="Death's Rise", faction="Neutral", x=19.34, y=47.78},
+		{name="Crusaders' Pinnacle", faction="Neutral", x=79.41, y=72.36},
+		{name="The Argent Vanguard", faction="Neutral", x=87.80, y=78.07},
+	},
+	["Sholazar Basin"] = {
+		{name="River's Heart", faction="Neutral", x=50.13, y=61.36},
+		{name="Nesingwary Base Camp", faction="Neutral", x=25.27, y=58.44},
+	},
+	["The Storm Peaks"] = {
+		{name="Frosthold", faction="Alliance", x=29.50, y=74.33},
+		{name="Grom'arsh Crash-Site", faction="Horde", x=36.19, y=49.39},
+		{name="Camp Tunka'lo", faction="Horde", x=65.41, y=50.60},
+		{name="K3", faction="Neutral", x=40.75, y=84.55},
+		{name="Dun Niffelem", faction="Neutral", x=62.63, y=60.93},
+		{name="Ulduar", faction="Neutral", x=44.49, y=28.19},
+		{name="Bouldercrag's Refuge", faction="Neutral", x=30.65, y=36.32},
+	},
+	["Wintergrasp"] = {
+		{name="Valiance Landing Camp", faction="Alliance", x=71.98, y=30.95},
+		{name="Warsong Camp", faction="Horde", x=21.62, y=34.95},
+	},
+	["Zul'Drak"] = {
+		{name="Light's Breach", faction="Neutral", x=32.18, y=74.39},
+		{name="Ebon Watch", faction="Neutral", x=14.01, y=73.58},
+		{name="The Argent Stand", faction="Neutral", x=41.55, y=64.43},
+		{name="Zim'Torga", faction="Neutral", x=60.04, y=56.71},
+		{name="Gundrak", faction="Neutral", x=70.46, y=23.28},
+	},
+	["Durotar"] = {
+		{name="Orgrimmar", faction="Horde", x=49.65, y=59.21},
+	},
+	["Eversong Woods"] = {
+		{name="Fairbreeze Village", faction="Horde", x=43.94, y=69.98},
+		{name="Silvermoon City", faction="Horde", x=54.37, y=50.73},
+		{name="Falconwing Square", faction="Horde", x=46.25, y=46.79},
+	},
+	["Ghostlands"] = {
+		{name="Tranquillien", faction="Horde", x=45.42, y=30.52},
+	},
+	["Tirisfal Glades"] = {
+		{name="Undercity", faction="Horde", x=63.26, y=48.55},
+	},
+	["Eastern Plaguelands"] = {
+		{name="Light's Hope Chapel", faction="Alliance", x=75.85, y=53.41},
+		{name="Light's Hope Chapel", faction="Horde", x=75.81, y=53.29},
+	},
+}
+
 local currentAdvice = nil
 local lastAdviceSig = nil
+local currentLibRoverPath = nil
+
+local function IsTaxiForFaction(taxi)
+	if not taxi then return false end
+	local faction = UnitFactionGroup("player")
+	return taxi.faction == "Neutral" or taxi.faction == faction
+end
+
+local function IsTaxiKnown(taxi)
+	if not taxi or not TA_LibTaxi then return false end
+	local known = TA_LibTaxi:GetTaxisEnglish()
+	return known and known[taxi.name]
+end
+
+local function FindBestTaxiPoint(zone, requireKnown)
+	local points = TAXI_POINTS[zone]
+	if not points then return nil end
+	local best, bestDist
+	for _, taxi in ipairs(points) do
+		if IsTaxiForFaction(taxi) and (not requireKnown or IsTaxiKnown(taxi)) then
+			local dist = DistToPoint(zone, taxi.x, taxi.y)
+			if not best or dist < bestDist then
+				best = taxi
+				bestDist = dist
+			end
+		end
+	end
+	return best
+end
+
+local function FindNearestKnownTaxi(continent)
+	local best, bestZone, bestDist
+	for zone, points in pairs(TAXI_POINTS) do
+		if GetZoneContinent(zone) == continent then
+			for _, taxi in ipairs(points) do
+				if IsTaxiForFaction(taxi) and IsTaxiKnown(taxi) then
+					local dist = DistToPoint(zone, taxi.x, taxi.y)
+					if not best or dist < bestDist then
+						best = taxi
+						bestZone = zone
+						bestDist = dist
+					end
+				end
+			end
+		end
+	end
+	return best, bestZone
+end
+
+local function GetTaxiAdvice(playerZone, destZone, playerCont)
+	local source = FindBestTaxiPoint(playerZone, true)
+	local sourceZone = playerZone
+	if not source then
+		source, sourceZone = FindNearestKnownTaxi(playerCont)
+	end
+	local destination = FindBestTaxiPoint(destZone, true)
+	if not source or not destination then return nil end
+	return {
+		mode = "taxi",
+		text = ("Fly to %s"):format(destination.name),
+		zone = sourceZone,
+		x = source.x,
+		y = source.y,
+	}
+end
+
+local function CanUseLibRoverPath()
+	return ZGV
+		and ZGV.db
+		and ZGV.db.profile
+		and ZGV.db.profile.pathfinding
+		and ZGV.db.profile.travel_use_librover == true
+		and ZGV.LibRover
+		and ZGV.LibRover.QueueFindPath
+		and ZGV.LibRover.Abort
+end
+
+local function GetMapIDForGoal(goal, fallbackMap)
+	local map = goal and goal.map or fallbackMap
+	if type(map) == "number" then return map end
+	if type(map) == "string" and ZGV.LibRover and ZGV.LibRover.GetMapByNameFloor then
+		local mapID = ZGV.LibRover:GetMapByNameFloor(map)
+		return mapID
+	end
+	return nil
+end
+
+local function GetAstrolabeZoneForMapID(mapID)
+	if ZGV.MapCoords and ZGV.MapCoords.GetAstrolabeCoords then
+		local c, z = ZGV.MapCoords:GetAstrolabeCoords(mapID)
+		if c and z then return c, z end
+	end
+	local name = ZGV.GetMapNameByID and ZGV.GetMapNameByID(mapID)
+	if name and name ~= "nil" then
+		return ZGV:GetMapZoneNumbers(name)
+	end
+end
+
+local function CacheLibRoverPath(path)
+	currentLibRoverPath = nil
+	if not path then return end
+	currentLibRoverPath = {}
+	for _, node in ipairs(path) do
+		if node and node.m and node.x and node.y then
+			local mapname = ZGV.GetMapNameByID and ZGV.GetMapNameByID(node.m)
+			currentLibRoverPath[#currentLibRoverPath + 1] = {
+				m = node.m,
+				x = node.x,
+				y = node.y,
+				type = node.type,
+				mode = node.link and node.link.mode,
+				mapname = mapname,
+			}
+		end
+	end
+end
+
+local function PickNextLibRoverNode(path)
+	if not path then return nil end
+	for i = 2, #path do
+		local node = path[i]
+		if node and node.type ~= "end" and not node.player and node.m and node.x and node.y then
+			return node
+		end
+	end
+	return path[2]
+end
+
+local function StartLibRoverPath(finalWaypoint)
+	if not CanUseLibRoverPath() or not finalWaypoint or not finalWaypoint.goal then return false end
+	local goal = finalWaypoint.goal
+	if goal.waypoint_notravel then return false end
+	local mapID = GetMapIDForGoal(goal, finalWaypoint.map)
+	local x = goal.x
+	local y = goal.y
+	if not mapID or not x or not y then return false end
+	if x > 1 or y > 1 then
+		x = x / 100
+		y = y / 100
+	end
+
+	local token = {}
+	ZGV.activeLibRoverWaypointToken = token
+	ZGV.Pointer.DestinationWaypoint = finalWaypoint
+
+	local function LibRoverPathHandler(state, path, ext, reason)
+		if not ZGV or ZGV.activeLibRoverWaypointToken ~= token then return end
+		if state == "progress" then return end
+		if state == "failure" then
+			currentLibRoverPath = nil
+			if finalWaypoint then
+				finalWaypoint.errortext = reason
+				ZGV.Pointer:ShowArrow(finalWaypoint)
+			end
+			return
+		end
+		if state ~= "success" then return end
+
+		CacheLibRoverPath(path)
+		local node = PickNextLibRoverNode(path)
+		if not node then return end
+		local c, z = GetAstrolabeZoneForMapID(node.m)
+		if not c or not z then return end
+
+		ZGV.Pointer:ClearWaypoints("route")
+		local title = node.text
+			or (node.GetTextAsItinerary and node:GetTextAsItinerary())
+			or node.maplabel
+			or finalWaypoint.t
+			or "Travel"
+		local routeWaypoint = ZGV.Pointer:SetWaypoint(c, z, node.x, node.y, {
+			title = title,
+			type = "route",
+			onminimap = "always",
+			overworld = true,
+			pathnode = node,
+		})
+		if routeWaypoint then
+			routeWaypoint.goal = finalWaypoint.goal
+			routeWaypoint.titleloc = finalWaypoint.titleloc
+			ZGV.Pointer:ShowArrow(routeWaypoint)
+		end
+	end
+
+	ZGV.LibRover:Abort("before guide waypoint path", "quiet")
+	ZGV.LibRover:QueueFindPath(0, 0, 0, mapID, x, y, LibRoverPathHandler, { title = finalWaypoint.t or "Destination", waypoint = finalWaypoint })
+	return true
+end
 
 local function GetTravelAdvice(destZone)
 	if not destZone then return nil end
@@ -110,32 +394,8 @@ local function GetTravelAdvice(destZone)
 	local destCont = GetZoneContinent(destZone)
 	if not playerCont or not destCont then currentAdvice = nil return nil end
 
-	-- Same continent: suggest nearest flight path
 	if playerCont == destCont then
-		-- Check if player has any discovered taxi near destination using LibTaxi
-		local fpNote = ""
-		if TA_LibTaxi then
-			local known = TA_LibTaxi:GetTaxisEnglish()
-			if known then
-				-- See if any known taxi contains the dest zone name
-				local hasNearby = false
-				for taxiName in pairs(known) do
-					taxiName = type(taxiName) == "string" and taxiName or (type(known[taxiName]) == "string" and known[taxiName]) or nil
-					if taxiName and taxiName:find(destZone, 1, true) then
-						hasNearby = true
-						fpNote = " (FP known)"
-						break
-					end
-				end
-				if not hasNearby then
-					fpNote = " (no FP discovered nearby!)"
-				end
-			end
-		end
-		currentAdvice = {
-			mode = "taxi",
-			text = "Fly to " .. destZone .. fpNote,
-		}
+		currentAdvice = GetTaxiAdvice(playerZone, destZone, playerCont)
 		return currentAdvice
 	end
 
@@ -168,9 +428,14 @@ end
 local function TravelAdvisor_Clear()
 	currentAdvice = nil
 	lastAdviceSig = nil
+	currentLibRoverPath = nil
+	if ZGV and ZGV.Pointer then ZGV.Pointer:ClearWaypoints("route") end
+	if ZGV and ZGV.LibRover and ZGV.LibRover.Abort and (ZGV.LibRover.ready or ZGV.LibRover.updating or ZGV.LibRover.calculating) then
+		ZGV.LibRover:Abort("clear guide waypoint path", "quiet")
+	end
 end
 
-function me:GetLibRoverPath() return nil end
+function me:GetLibRoverPath() return currentLibRoverPath end
 function me:GetLibRoverModes() return nil end
 function me:ClearLibRoverPath() TravelAdvisor_Clear() end
 
@@ -492,6 +757,7 @@ me.WaypointFunctions['internal'] = {
 	setwaypoint = function (self,goalnumORx,y,title)
 		if UnitIsDeadOrGhost("player") then return end -- don't overwrite the stinking arrow
 		self.Pointer:ClearWaypoints("way")
+		self.Pointer:ClearWaypoints("route")
 		if goalnumORx==false then return end
 		if not y then
 			local goals={}
@@ -500,7 +766,7 @@ me.WaypointFunctions['internal'] = {
 			local preferredDisplayGoal
 			local lastDisplayGoal
 			local displayActions = {
-				accept=true, turnin=true, talk=true, goto=true, use=true, buy=true,
+				accept=true, turnin=true, talk=true, ["goto"]=true, use=true, buy=true,
 				get=true, collect=true, goldcollect=true, goal=true, kill=true, from=true,
 			}
 			local function IsNavOnly(goal)
@@ -570,14 +836,8 @@ me.WaypointFunctions['internal'] = {
 					-- skip, ant trail covers these
 				elseif not goal.force_noway then
 					local gmap = goal.map or (self.CurrentStep and self.CurrentStep.map) or GetRealZoneText()
-					-- If cross-zone, show travel advice on arrow
-					local travelTitle = nil
-					if crossZoneDest and gmap ~= currentZone then
-						travelTitle = GetTravelArrowTitle(crossZoneDest)
-					end
 					local waypointTitle =
 						goal.title
-						or travelTitle
 						or GetRemasterArrowTitle(self,goal,title)
 						or self.CurrentStep:GetTitle()
 						or (gmap and goal.x and ("%s %d,%d"):format(gmap,goal.x,goal.y))
@@ -640,21 +900,24 @@ me.WaypointFunctions['internal'] = {
 					selected.titleloc = FormatWaypointLocation(preferredDisplayGoal, preferredDisplayGoal.map or (self.CurrentStep and self.CurrentStep.map) or GetRealZoneText())
 				end
 				-- Travel Advisor: when cross-zone, override arrow to point at transit location
-				if crossZoneDest then
+				local libRoverStarted = StartLibRoverPath(selected)
+				if crossZoneDest and not libRoverStarted and not (selected.goal and selected.goal.waypoint_notravel) then
 					local advice = GetTravelAdvice(crossZoneDest)
 					if advice and advice.zone and advice.x and advice.y then
 						-- Create a waypoint at the transit point (boat dock, zeppelin tower, portal)
 						local transitWay = self.Pointer:SetWaypoint(nil, advice.zone, advice.x, advice.y, {
 							title = advice.text,
+							type = "route",
+							travelDestZone = crossZoneDest,
 							onminimap = "always",
 							overworld = true,
 						})
 						if transitWay then
 							selected = transitWay
-							selected.t = GetTravelArrowTitle(crossZoneDest)
+							selected.t = advice.text
 						end
 					elseif advice then
-						selected.t = GetTravelArrowTitle(crossZoneDest)
+						selected.t = advice.text
 					end
 				end
 				self.Pointer:ShowArrow (selected)

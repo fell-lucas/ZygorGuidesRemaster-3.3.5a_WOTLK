@@ -30,8 +30,7 @@
 	<Include file="Libs\LibGratuity-3.0\lib.xml"/>
 	<Include file="Libs\LibCamera-1.0\lib.xml"/>
 	<Include file="Libs\LibTaxi-1.0\lib.xml"/>
-	<!-- LibRover disabled: too heavy for 3.3.5a. Using lightweight TravelAdvisor instead. -->
-	<!-- <Include file="Libs\LibRover-1.0\lib.xml"/> -->
+	<Include file="Libs\LibRover-1.0\lib.xml"/>
 
 	<!--
 	<Include file="Libs\LibQuestWatch-1.0\lib.xml"/>
