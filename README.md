@@ -164,6 +164,13 @@ This addon is fully open source and can be inspected before use.
 
 ## Changelog
 
+### Revision 167 - 3.0.167
+
+- Added 170 missing low-level item records from the latest item database check result after verifying each item ID/name against WotLKDB.
+- Re-sorted `ZygorItemDB.lua` by item level descending and item ID ascending within each item level for easier review and future maintenance.
+- Updated `ZygorItemDB.lua` metadata to `2026-05-13 10:21:00 -05:00` and `25107 Items`.
+- Updated addon version metadata to 3.0.167.
+
 ### Revision 166 - 3.0.166
 
 - Added a ChromieCraft compatibility guard for `QuestPOI_HideButtons` so missing Blizzard POI button globals no longer crash Astrolabe-driven map marker placement.
@@ -192,16 +199,6 @@ This addon is fully open source and can be inspected before use.
 - Adjusted zhCN/CJK font handling so Chinese, Taiwanese, and Korean clients use the client-provided UI font for remaster headers and guide browser text instead of bundled Latin Segoe fonts.
 - Stopped forcing `Fonts\ZYKai_T.ttf` for zhCN because that exact font path is not guaranteed to exist in the addon/client environment.
 - Updated addon version metadata to 3.0.163.
-
-### Revision 158 - 3.0.158
-
-- Adds @hypopheria2k's PR Merge:
-  - Adds more Database Items that were originally missed, including roughly 365 Items.
-  - Adds Questing: Mute addon chat spam, preventing Zygor Guides from Letting you know every detail that's going on.
-  - Adds Questing: Show Gold vendor prices in tooltips, disabling the Auction House GOLD guide integration in the tooltips.
-  - Background opacity now hides borders on all panels.
-- Updated addon version metadata to 3.0.158.
-Thanks Hypo!
 
 ## Notes
 
