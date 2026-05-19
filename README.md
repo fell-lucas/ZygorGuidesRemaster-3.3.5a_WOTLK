@@ -164,6 +164,12 @@ This addon is fully open source and can be inspected before use.
 
 ## Changelog
 
+### Revision 172 - 3.0.172
+
+- Fixed Gear Finder empty result rows so internal `reject:` diagnostics no longer appear under `No upgrade found`.
+- Prevented Gear Finder from recommending an exact item already equipped in a ring or trinket paired slot.
+- Updated addon version metadata to 3.0.172.
+
 ### Revision 171 - 3.0.171
 
 - Reduced built-in waypoint arrow garbage generation by separating arrow direction updates from distance/title/ETA text refreshes.

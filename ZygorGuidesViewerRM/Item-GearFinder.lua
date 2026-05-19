@@ -927,6 +927,50 @@ local distinct_slot_pairs = {
 	[INVSLOT_TRINKET1] = INVSLOT_TRINKET2,
 }
 
+local reverse_distinct_slot_pairs = {}
+for first, second in pairs(distinct_slot_pairs) do
+	reverse_distinct_slot_pairs[second] = first
+end
+
+local function get_distinct_pair_partner(slot)
+	return distinct_slot_pairs[slot] or reverse_distinct_slot_pairs[slot]
+end
+
+local function get_candidate_item_id(item)
+	if not item then return nil end
+	if item.itemid then return tonumber(item.itemid) end
+	return GF_GetItemID(item.itemlinkfull or item.itemlink)
+end
+
+local function is_candidate_equipped_in_slot(slot, itemid)
+	if not slot or not itemid then return false end
+	local upgrades = ItemScore and ItemScore.Upgrades
+	if not upgrades or not upgrades.GetEquippedItemData then return false end
+	local equipped = upgrades:GetEquippedItemData(slot)
+	if not equipped then return false end
+	local equippedID = tonumber(equipped.itemid) or GF_GetItemID(equipped.itemlink)
+	return equippedID and equippedID == itemid or false
+end
+
+local function is_candidate_already_equipped_for_slot(slot, item)
+	local itemid = get_candidate_item_id(item)
+	if not itemid then return false end
+	if is_candidate_equipped_in_slot(slot, itemid) then return true end
+	local partner = get_distinct_pair_partner(slot)
+	return partner and is_candidate_equipped_in_slot(partner, itemid) or false
+end
+
+local function queue_upgrade_candidate(slot, item)
+	if not slot or not item or not GearFinder.UpgradeQueue[slot] then return false end
+	if is_candidate_already_equipped_for_slot(slot, item) then
+		set_slot_reject(slot, "reject: already equipped")
+		return false
+	end
+	table.insert(GearFinder.UpgradeQueue[slot], item)
+	add_slot_debug(slot, "upgrades")
+	return true
+end
+
 -- checks if gearfounder got upgrades for all slots, so that we may skip looking for future upgrades
 -- no params
 -- returns
@@ -1406,6 +1450,10 @@ queue_fallback_candidate = function(slot, item, itemdata, ident, future)
 	local queue = GearFinder.FallbackQueue[slot]
 	local baseline = get_equipped_item_level(slot)
 	local candidateLevel = tonumber(item.itemlvl) or 0
+	if is_candidate_already_equipped_for_slot(slot, item) then
+		set_slot_reject(slot, "reject: already equipped")
+		return false
+	end
 	if not item.force_approximate and candidateLevel > 0 and baseline > 0 and candidateLevel <= baseline then
 		set_slot_reject(slot, ("reject: ilvl %d <= equipped %d for %s"):format(candidateLevel, baseline, tostring(item.cached_name or item.itemlink or "item")))
 		return false
@@ -1537,13 +1585,11 @@ local function loot_score_dungeon_thread()
 						queuedItem.cached_name = queuedItem.cached_name or queuedItem.name
 						queuedItem.change = change
 						if not (queuedItem.quest and IsQuestFlaggedCompleted(queuedItem.quest)) then
-							table.insert(GearFinder.UpgradeQueue[slot],queuedItem)
-							add_slot_debug(slot, "upgrades")
+							queue_upgrade_candidate(slot, queuedItem)
 
 							if slot_2 then
 								queuedItem.change_2 = change_2
-								table.insert(GearFinder.UpgradeQueue[slot_2],queuedItem)
-								add_slot_debug(slot_2, "upgrades")
+								queue_upgrade_candidate(slot_2, queuedItem)
 							end
 						end
 					elseif validity and validity.valid and is_replacement(twohander_equipped, item) then
@@ -1622,13 +1668,11 @@ local function loot_score_dungeon_thread()
 						queuedItem.cached_name = queuedItem.cached_name or queuedItem.name
 						queuedItem.change = change
 						GF_AddVendorFields(queuedItem, itemdata)
-						table.insert(GearFinder.UpgradeQueue[slot],queuedItem)
-						add_slot_debug(slot, "upgrades")
+						queue_upgrade_candidate(slot, queuedItem)
 
 						if slot_2 then
 							queuedItem.change_2 = change_2
-							table.insert(GearFinder.UpgradeQueue[slot_2],queuedItem)
-							add_slot_debug(slot_2, "upgrades")
+							queue_upgrade_candidate(slot_2, queuedItem)
 						end
 					elseif validity and validity.valid and is_replacement(twohander_equipped, item) then
 						set_slot_compare_reject(validity.slot, item)
@@ -1773,13 +1817,11 @@ local function loot_score_dungeon_thread()
 								queuedItem.cached_name = queuedItem.cached_name or queuedItem.name
 								queuedItem.change = change
 								if not (queuedItem.quest and IsQuestFlaggedCompleted(queuedItem.quest)) then
-									table.insert(GearFinder.UpgradeQueue[slot],queuedItem)
-									add_slot_debug(slot, "upgrades")
+									queue_upgrade_candidate(slot, queuedItem)
 
 									if slot_2 then
 										queuedItem.change_2 = change_2
-										table.insert(GearFinder.UpgradeQueue[slot_2],queuedItem)
-										add_slot_debug(slot_2, "upgrades")
+										queue_upgrade_candidate(slot_2, queuedItem)
 									end
 								end
 							end
@@ -2991,7 +3033,7 @@ function GearFinder:DisplayResults()
 					button.itemdungeon:SetText(reason)
 					button.itemencounter:SetText(" ")
 				else
-					button.itemencounter:SetText(reason)
+					button.itemencounter:SetText(" ")
 				end
 				button.bisTooltipText = nil
 				button.bisbadge:Hide()
