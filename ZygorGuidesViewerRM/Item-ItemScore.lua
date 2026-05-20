@@ -196,94 +196,17 @@ local FAMILY_ALIASES = {
 	JEWELERY = {"miscellaneous","misc", "jewelry", "jewellery"},
 }
 
-local LOCALIZED_FAMILY_ALIASES = {
-	ruRU = {
-		AXE = {"Топоры", "топоры"},
-		TH_AXE = {"Двуручные топоры", "двуручные топоры"},
-		BOW = {"Луки", "луки"},
-		CROSSBOW = {"Арбалеты", "арбалеты"},
-		DAGGER = {"Кинжалы", "кинжалы"},
-		FIST = {"Кистевое оружие", "кистевое оружие"},
-		FISHPOLE = {"Удочки", "удочки"},
-		GUN = {"Огнестрельное", "огнестрельное", "Ружья", "ружья"},
-		MACE = {"Дробящее оружие", "дробящее оружие"},
-		TH_MACE = {"Двуручное ударное оружие", "двуручное ударное оружие"},
-		TH_POLE = {"Древковое оружие", "древковое оружие", "Копья", "копья"},
-		SWORD = {"Мечи", "мечи"},
-		TH_SWORD = {"Двуручные мечи", "двуручные мечи"},
-		TH_STAFF = {"Посохи", "посохи"},
-		THROWN = {"Метательное", "метательное", "Метательное оружие", "метательное оружие"},
-		WAND = {"Жезлы", "жезлы"},
-		CLOTH = {"Ткань", "ткань", "Тканевые доспехи", "тканевые доспехи"},
-		LEATHER = {"Кожа", "кожа", "Кожаные доспехи", "кожаные доспехи"},
-		MAIL = {"Кольчуга", "кольчуга", "Кольчужные доспехи", "кольчужные доспехи"},
-		PLATE = {"Латы", "латы", "Латные доспехи", "латные доспехи"},
-		SHIELD = {"Щит", "щит"},
-	},
-}
-
-local LOCALIZED_ARMOR_SUBTYPE_GLOBALS = {
-	CLOTH = {"ITEM_SUBCLASS_ARMOR_CLOTH"},
-	LEATHER = {"ITEM_SUBCLASS_ARMOR_LEATHER"},
-	MAIL = {"ITEM_SUBCLASS_ARMOR_MAIL"},
-	PLATE = {"ITEM_SUBCLASS_ARMOR_PLATE"},
-	SHIELD = {"ITEM_SUBCLASS_ARMOR_SHIELD"},
-}
-
-local LOCALIZED_WEAPON_SUBTYPE_GLOBALS = {
-	AXE = {"ITEM_SUBCLASS_WEAPON_AXE1H", "ITEM_SUBCLASS_WEAPON_AXE"},
-	TH_AXE = {"ITEM_SUBCLASS_WEAPON_AXE2H"},
-	BOW = {"ITEM_SUBCLASS_WEAPON_BOW"},
-	CROSSBOW = {"ITEM_SUBCLASS_WEAPON_CROSSBOW"},
-	DAGGER = {"ITEM_SUBCLASS_WEAPON_DAGGER"},
-	FIST = {"ITEM_SUBCLASS_WEAPON_FIST", "ITEM_SUBCLASS_WEAPON_FIST_WEAPON"},
-	FISHPOLE = {"ITEM_SUBCLASS_WEAPON_FISHINGPOLE", "ITEM_SUBCLASS_WEAPON_FISHING_POLE"},
-	GUN = {"ITEM_SUBCLASS_WEAPON_GUN"},
-	MACE = {"ITEM_SUBCLASS_WEAPON_MACE1H", "ITEM_SUBCLASS_WEAPON_MACE"},
-	TH_MACE = {"ITEM_SUBCLASS_WEAPON_MACE2H"},
-	TH_POLE = {"ITEM_SUBCLASS_WEAPON_POLEARM", "ITEM_SUBCLASS_WEAPON_SPEAR"},
-	SWORD = {"ITEM_SUBCLASS_WEAPON_SWORD1H", "ITEM_SUBCLASS_WEAPON_SWORD"},
-	TH_SWORD = {"ITEM_SUBCLASS_WEAPON_SWORD2H"},
-	TH_STAFF = {"ITEM_SUBCLASS_WEAPON_STAFF"},
-	THROWN = {"ITEM_SUBCLASS_WEAPON_THROWN"},
-	WAND = {"ITEM_SUBCLASS_WEAPON_WAND"},
-}
-
-local function add_family_alias(lookup, family, alias)
-	local normalized = normalize_label(alias)
-	if normalized and normalized ~= "" then
-		lookup[normalized] = family
-	end
-end
-
 local canonical_family_lookup
 local function build_canonical_family_lookup()
 	if canonical_family_lookup then return canonical_family_lookup end
 	canonical_family_lookup = {}
 	for family, skillName in pairs(ItemScore.SkillNames or {}) do
-		add_family_alias(canonical_family_lookup, family, skillName)
+		local normalized = normalize_label(skillName)
+		if normalized then canonical_family_lookup[normalized] = family end
 	end
 	for family, aliases in pairs(FAMILY_ALIASES) do
 		for _, alias in ipairs(aliases) do
-			add_family_alias(canonical_family_lookup, family, alias)
-		end
-	end
-	for family, globals in pairs(LOCALIZED_ARMOR_SUBTYPE_GLOBALS) do
-		for _, globalName in ipairs(globals) do
-			add_family_alias(canonical_family_lookup, family, _G[globalName])
-		end
-	end
-	for family, globals in pairs(LOCALIZED_WEAPON_SUBTYPE_GLOBALS) do
-		for _, globalName in ipairs(globals) do
-			add_family_alias(canonical_family_lookup, family, _G[globalName])
-		end
-	end
-	local localeAliases = LOCALIZED_FAMILY_ALIASES[locale]
-	if localeAliases then
-		for family, aliases in pairs(localeAliases) do
-			for _, alias in ipairs(aliases) do
-				add_family_alias(canonical_family_lookup, family, alias)
-			end
+			canonical_family_lookup[normalize_label(alias)] = family
 		end
 	end
 	return canonical_family_lookup
@@ -633,12 +556,7 @@ function ItemScore:GetItemDetailsFromDB(itemLinkOrID)
 
 	local meta = self.GearFinderItemMeta and self.GearFinderItemMeta[tonumber(itemID)] or nil
 	local equiploc = (meta and meta.equipLoc) or DB_SLOT_TO_INVTYPE[dbsource.s]
-	local itemClassID = dbsource.ic
-	local itemSubClassID = dbsource["is"]
 	local family = meta and meta.family or nil
-	if not family and itemClassID and itemSubClassID then
-		family = select(1, resolve_item_family(itemClassID, itemSubClassID))
-	end
 	if not family and equiploc then
 		family = select(1, resolve_family_from_equip_loc(equiploc))
 	end
@@ -646,7 +564,8 @@ function ItemScore:GetItemDetailsFromDB(itemLinkOrID)
 		family = nil
 	end
 
-	if not itemClassID and family and ARMOR_FAMILY_ORDER[family] then
+	local itemClassID, itemSubClassID
+	if family and ARMOR_FAMILY_ORDER[family] then
 		itemClassID = LE_ITEM_CLASS_ARMOR
 		for id, name in pairs(item_armor_types or {}) do
 			if name == family then
@@ -654,7 +573,7 @@ function ItemScore:GetItemDetailsFromDB(itemLinkOrID)
 				break
 			end
 		end
-	elseif not itemClassID and family then
+	elseif family then
 		for id, name in pairs(item_weapon_types or {}) do
 			if name == family then
 				itemClassID = LE_ITEM_CLASS_WEAPON
@@ -688,7 +607,7 @@ function ItemScore:GetItemDetailsFromDB(itemLinkOrID)
 		playerspec = nil,
 		requires_detail = nil,
 		needs_exact_stats = ((dbsource.rp and dbsource.rp ~= 0) or (dbsource.sc and dbsource.sc ~= 0)) and true or false,
-		needs_live_scan = not (itemClassID and itemSubClassID),
+		needs_live_scan = true,
 		name = (meta and meta.name) or dbsource.n,
 		ignore_for_gear = is_test_item_name((meta and meta.name) or dbsource.n),
 		fromdb = true,
@@ -729,12 +648,6 @@ local function get_item_family(item)
 	local equipFamily = resolve_family_from_equip_loc(item.equiploc or item.type)
 	if equipFamily and equipFamily ~= "MISCARM" and equipFamily ~= "OFFHAND" then return equipFamily end
 	if item.family then return item.family end
-	if item.class == LE_ITEM_CLASS_ARMOR and item.subclass and item_armor_types[item.subclass] then
-		return item_armor_types[item.subclass]
-	end
-	if item.class == LE_ITEM_CLASS_WEAPON and item.subclass and item_weapon_types[item.subclass] then
-		return item_weapon_types[item.subclass]
-	end
 	if (item.equiploc == "INVTYPE_RANGED" or item.equiploc == "INVTYPE_RANGEDRIGHT") and ItemScore and ItemScore.playerclass then
 		if ItemScore.playerclass == "PRIEST" or ItemScore.playerclass == "MAGE" or ItemScore.playerclass == "WARLOCK" then
 			return "WAND"
@@ -767,8 +680,14 @@ local function get_item_family(item)
 	if item.subtype then
 		local normalizedSubtype = normalize_label(item.subtype)
 		if normalizedSubtype then
-			local canonicalFamily = build_canonical_family_lookup()[normalizedSubtype]
-			if canonicalFamily then return canonicalFamily end
+			for family, aliases in pairs(FAMILY_ALIASES) do
+				for _, alias in ipairs(aliases) do
+					local normalizedAlias = normalize_label(alias)
+					if normalizedAlias and (normalizedSubtype == normalizedAlias or normalizedSubtype:find(normalizedAlias, 1, true)) then
+						return family
+					end
+				end
+			end
 		end
 		local subtypeFamily = select(1, resolve_item_family(item.class, item.subtype))
 		if subtypeFamily then return subtypeFamily end
@@ -867,59 +786,6 @@ local function item_is_gear(item)
 	end
 	local _, _, _, equippable = get_item_slot_info(item)
 	return equippable and true or false
-end
-
-local function item_fails_runtime_usability(itemlink)
-	if not itemlink or not IsUsableItem then return false end
-	local usable, noResource = IsUsableItem(itemlink)
-	return usable == false and not noResource
-end
-
-local function runtime_unusable_verdict(item, slot_1, slot_2, twohander)
-	return {
-		valid = false,
-		final = true,
-		reason = "unsupported item type",
-		code = "runtime_usable",
-		item = item,
-		slot = slot_1,
-		slot_2 = slot_2,
-		twohander = twohander,
-	}
-end
-
-local function pending_item_details_verdict(item)
-	return {
-		valid = false,
-		final = false,
-		reason = "pending item details",
-		code = "pending_info",
-		item = item,
-	}
-end
-
-local function tooltip_line_is_red(line)
-	if not line then return false end
-	local color = tostring(line):match("|c(%x%x%x%x%x%x%x%x)")
-	if not color then return false end
-	local r = tonumber(color:sub(3, 4), 16) or 0
-	local g = tonumber(color:sub(5, 6), 16) or 0
-	local b = tonumber(color:sub(7, 8), 16) or 0
-	return r >= 200 and g <= 80 and b <= 80
-end
-
-local function tooltip_line_marks_unusable_item_type(line)
-	if not tooltip_line_is_red(line) then return false end
-	local text = tostring(line):gsub("|c........", ""):gsub("|r", "")
-	local normalized = normalize_label(text)
-	if not normalized or normalized == "" then return false end
-	local family = build_canonical_family_lookup()[normalized]
-	if family then return true end
-	local lowerText = normalized
-	return lowerText == "cloth" or lowerText == "leather" or lowerText == "mail" or lowerText == "plate" or lowerText == "shield"
-		or lowerText == "bow" or lowerText == "gun" or lowerText == "crossbow" or lowerText == "wand" or lowerText == "thrown"
-		or lowerText == "dagger" or lowerText == "sword" or lowerText == "axe" or lowerText == "mace" or lowerText == "staff"
-		or lowerText == "polearm" or lowerText == "fist weapon" or lowerText == "fishing pole"
 end
 
 local function clamp_display_percent(percent)
@@ -1509,7 +1375,6 @@ function ItemScore:GetItemValidityForContext(itemlink, future, context)
 	if not context then return {valid = false, final = false, reason = "No context", code = "missing_context"} end
 	local item = ItemScore:GetResolvedItemDetails(itemlink)
 	if not item then return {valid = false, final = false, reason = "No info", code = "missing_info"} end
-	if item_needs_live_resolution(item) then return pending_item_details_verdict(item) end
 
 	local slot_1, slot_2, twohander, equippable, slotReason = get_item_slot_info(item)
 	if not equippable then
@@ -1518,10 +1383,6 @@ function ItemScore:GetItemValidityForContext(itemlink, future, context)
 
 	if item.ignore_for_gear then
 		return {valid = false, final = true, reason = "test item", code = "test_item", item = item}
-	end
-
-	if item.unusable_by_tooltip then
-		return runtime_unusable_verdict(item, slot_1, slot_2, twohander)
 	end
 
 	if item.playerclass then
@@ -1547,10 +1408,6 @@ function ItemScore:GetItemValidityForContext(itemlink, future, context)
 
 	if not future and item.minlevel and item.minlevel > context.playerlevel then
 		return {valid = false, final = true, reason = ("required level %d to equip"):format(item.minlevel), code = "level", item = item, slot = slot_1, slot_2 = slot_2, twohander = twohander}
-	end
-
-	if not future and item_fails_runtime_usability(itemlink) then
-		return runtime_unusable_verdict(item, slot_1, slot_2, twohander)
 	end
 
 	if item.equiploc == "INVTYPE_SHIELD" and context.ActiveRuleSet and context.ActiveRuleSet.itemtypes and context.ActiveRuleSet.itemtypes.SHIELD == nil then
@@ -2552,14 +2409,12 @@ function ItemScore:GetItemDetailsQueued(itemlink,force)
 
 		-- class, spec check, and level check. we need to scan tooltip for those. meh.
 		local playerclass, playerspec
-		local unusable_by_tooltip = false
 		local canScanTooltip = true
 		Gratuity:SetHyperlink(itemlink)
 		if Gratuity:NumLines()==0 then
 			if not dbitem then return false end
 			canScanTooltip = false
 		end
-		local pendingLiveScan = (not canScanTooltip and dbitem and dbitem.needs_live_scan) and true or false
 
 		local stats
 		if canScanTooltip then
@@ -2601,9 +2456,6 @@ function ItemScore:GetItemDetailsQueued(itemlink,force)
 				if line==RETRIEVING_ITEM_INFO then return false end
 
 				if ItemScore.SaveTooltip then table.insert(tooltip,line) end
-				if tooltip_line_marks_unusable_item_type(line) then
-					unusable_by_tooltip = true
-				end
 
 				line = line:gsub("|c........",""):gsub("|r","") -- strip color codes, if any
 
@@ -2689,10 +2541,9 @@ function ItemScore:GetItemDetailsQueued(itemlink,force)
 			allowableRaceMask = dbitem and dbitem.allowableRaceMask,
 			playerspec = playerspec,
 			requires_detail = requires_detail,
-			unusable_by_tooltip = unusable_by_tooltip,
 			name = itemName,
 			needs_exact_stats = false,
-			needs_live_scan = pendingLiveScan,
+			needs_live_scan = false,
 			fromdb = dbitem and true or false,
 		}
 
@@ -2728,7 +2579,6 @@ end
 function ItemScore:GetItemScore(itemlink,verbose)
 	local item = ItemScore:GetResolvedItemDetails(itemlink)
 	if not item then return -1, -1, false, "no info yet" end
-	if item_needs_live_resolution(item) then return -1, false, "pending item details" end
 	if not self:EnsureActiveRuleSet() then return -1, false, "no active rules" end
 
 	local stats = item.stats
@@ -2842,9 +2692,6 @@ function ItemScore:GetItemValidity(itemlink, future)
 	if not item then
 		return {valid = false, final = false, reason = "No info", code = "missing_info"}
 	end
-	if item_needs_live_resolution(item) then
-		return pending_item_details_verdict(item)
-	end
 
 	local slot_1, slot_2, twohander, equippable, slotReason = get_item_slot_info(item)
 	if not equippable then
@@ -2865,10 +2712,6 @@ function ItemScore:GetItemValidity(itemlink, future)
 			code = "test_item",
 			item = item,
 		}
-	end
-
-	if item.unusable_by_tooltip then
-		return runtime_unusable_verdict(item, slot_1, slot_2, twohander)
 	end
 
 	if item.playerclass then
@@ -2930,10 +2773,6 @@ function ItemScore:GetItemValidity(itemlink, future)
 			slot_2 = slot_2,
 			twohander = twohander,
 		}
-	end
-
-	if not future and item_fails_runtime_usability(itemlink) then
-		return runtime_unusable_verdict(item, slot_1, slot_2, twohander)
 	end
 
 	if item.equiploc == "INVTYPE_SHIELD" and self.ActiveRuleSet and self.ActiveRuleSet.itemtypes and self.ActiveRuleSet.itemtypes.SHIELD == nil then
