@@ -600,20 +600,26 @@ if not GetItemInfoInstant then
 		return name, link, quality, iLevel, reqLevel, class, subclass
 	end
 end
-if not C_Container then
-	C_Container = {}
+if not C_Container then C_Container = {} end
+if not C_Container.ContainerIDToInventoryID then
 	C_Container.ContainerIDToInventoryID = function(bag)
 		return ContainerIDToInventoryID and ContainerIDToInventoryID(bag) or (19 + bag)
 	end
+end
+if not C_Container.GetContainerNumSlots then
 	C_Container.GetContainerNumSlots = function(bag)
 		return GetContainerNumSlots and GetContainerNumSlots(bag) or 0
 	end
+end
+if not C_Container.GetContainerItemInfo then
 	C_Container.GetContainerItemInfo = function(bag, slot)
 		if GetContainerItemInfo then
 			local texture, count, locked, quality, readable, lootable, link = GetContainerItemInfo(bag, slot)
 			return {iconFileID=texture, stackCount=count, isLocked=locked, quality=quality, isReadable=readable, hasLoot=lootable, hyperlink=link}
 		end
 	end
+end
+if not C_Container.GetContainerItemLink then
 	C_Container.GetContainerItemLink = function(bag, slot)
 		return GetContainerItemLink and GetContainerItemLink(bag, slot)
 	end

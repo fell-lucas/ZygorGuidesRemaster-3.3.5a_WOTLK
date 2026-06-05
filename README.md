@@ -164,6 +164,13 @@ This addon is fully open source and can be inspected before use.
 
 ## Changelog
 
+### Revision 191 - 3.0.191
+
+- Fixed compatibility with Aux auction addon forks that create a partial global `C_Container` table on WotLK clients.
+- Zygor now backfills missing `C_Container` methods individually instead of assuming an existing compatibility table is complete.
+- Resolved the `GoldUI\Auctiontools-Core.lua:830` `ContainerIDToInventoryID` Lua error and restored settings persistence when Zygor runs alongside Aux.
+- Updated addon version metadata to 3.0.191.
+
 ### Revision 190 - 3.0.190
 
 - Fixed an Ebonhold/Rogue-Lite Death Knight starter freeze when switching to the built-in waypointing system with the DK starter guide active.
@@ -205,12 +212,6 @@ This addon is fully open source and can be inspected before use.
 - Added `/zgvgeartrace <itemid>` diagnostics for Gear Finder oddities. Users should run it on any suspicious recommendation and send the copied popup text with a screenshot of the finder result.
 - Updated addon version metadata to 3.0.186.
 
-### Revision 183 - 3.0.183
-
-- Added Gear Advisor tooltip display options for `Upgrade Comparison`, `Item Score`, and `Both`.
-- Added an optional normalized item score display mode for Pawn-like static score values.
-- Localized the new tooltip value display and normalization options across supported addon locales.
-- Updated addon version metadata to 3.0.183.
 
 ## Notes
 
