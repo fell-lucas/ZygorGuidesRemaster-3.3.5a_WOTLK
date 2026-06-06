@@ -3901,7 +3901,7 @@ function me:OnInitialize()
 	self.dailyQuests = self.dailyQuests or {}
 
 	self.completionelapsed = 0
-	self.completionintervallong = 1.0
+	self.completionintervallong = 0.4
 	self.completionintervalmin = 0.01
 	self.completioninterval = self.completionintervallong
 
@@ -4607,6 +4607,17 @@ function me:TryToCompleteStep(force)
 		--self.pause=nil
 	end
 
+	-- Magnetic sync gate: when sync is enabled and snapping, slaves wait
+	-- for party members on the same step to complete before advancing.
+	if completing and self.Sync and self.Sync:IsEnabled() then
+		if not self.Sync:IsClearToProceed(self.CurrentStepNum) then
+			self.Sync:Debug("Waiting for party members to complete step.")
+			completing = false
+		else
+			self.Sync:Debug("Party members completed the step, moving on.")
+		end
+	end
+
 	if not completing then
 		self.pause=nil
 		self.completioninterval = self.completionintervallong
@@ -5295,6 +5306,20 @@ function me:UpdateFrame(full,onupdate,nonsecure_only)
 							frame:Hide()
 							nomoredisplayed=true
 							break --continue
+						end
+					end
+
+					-- Party Sync: ahead/behind footer (only on the current step, only when Sync is enabled and has data)
+					if stepnum==self.CurrentStepNum and ZGV.Sync and ZGV.Sync:IsEnabled() then
+						local ahead_behind = ZGV.Sync:GetAheadBehind()
+						if ahead_behind and line <= maxlines then
+							frame.lines[line].labelOffsetX = ZGV.ICON_INDENT
+							frame.lines[line].labelOffsetY = 0
+							self:ApplyGuideLineLabelLayout(frame.lines[line])
+							frame.lines[line].label:SetFont(FONT,round(self.db.profile.fontsecsize))
+							frame.lines[line].label:SetText("|cffaaaaaa"..ahead_behind.."|r")
+							frame.lines[line].goal = nil
+							line = line + 1
 						end
 					end
 
@@ -7802,6 +7827,9 @@ function me:RaceClassMatchList(list)
 end
 
 function me:SkipStep(delta,fast)
+	-- Slaves can't skip steps manually — they follow the master.
+	if self.Sync and self.Sync:IsSlave() then return end
+
 	if not self.CurrentGuide then return end
 
 	if self:InlineButtonsEnabled() and InCombatLockdown() then

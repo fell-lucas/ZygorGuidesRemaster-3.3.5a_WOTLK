@@ -36,6 +36,8 @@
 	<Include file="Libs\LibQuestWatch-1.0\lib.xml"/>
 	-->
 	
+	<Include file="Libs\LibDeflate\lib.xml" />
+	<Include file="Libs\AceComm-3.0\AceComm-3.0.xml" />
 	<Include file="Libs\Astrolabe\load.xml"/>
 
 	<!-- UIDropDownFork for Gold Guide Auctiontools -->

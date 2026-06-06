@@ -1158,6 +1158,9 @@ ZygorGuidesViewer_L("Specials", "enUS", function() return {
 
 	['contract_mobs_start'] = function(s) return s.." mobs" end,
 	['contract_mobs_end'] = function(s) return ZygorGuidesViewer_L("Specials")['plural'](s) end,
+	
+	sync_ahead = "|cff88ff88%s: Ahead (%d)|r",
+	sync_behind = "|cffff8888%s: Behind (%d)|r",
 } end)
 
 ZGVLPL = ZygorGuidesViewer_L("Plurals")

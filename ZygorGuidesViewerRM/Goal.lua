@@ -137,7 +137,7 @@ function Goal:IsComplete()
 		sticky_active = self.parentStep.condition_sticky() and true or false
 	end
 	if (sticky_active and ZGV.recentlyCompletedGoals[self]) or ZGV.recentlyStickiedGoals[self] then
-		return true,true,true
+		return true,true,true,nil
 	end
 
 	if self.force_nocomplete then return end
@@ -161,7 +161,7 @@ function Goal:IsComplete()
 		    or ZGV.questsbyid[self.questid]
 		    or (ZGV.instantQuests[self.questid] and ZGV.completedQuestTitles[self.quest])
 		    or (ZGV.CurrentGuide and not ZGV.CurrentGuide.daily and ZGV.db.char.permaCompletedDailies[self.questid])
-		return complete, complete or possible     --[[or ZGV.recentlyAcceptedQuests[id] --]]
+		return complete, complete or possible, nil, nil     --[[or ZGV.recentlyAcceptedQuests[id] --]]
 
 	elseif self.action=="turnin" then
 		local inlog = ZGV.questsbyid[self.questid]
@@ -180,7 +180,7 @@ function Goal:IsComplete()
 			ZGV.completedQuests[self.questid]
 			or (not ZGV.CurrentGuide.daily and ZGV.db.char.permaCompletedDailies[self.questid])
 			) and not inlog
-		return turned, turned or (inlog and (inlog.complete or #inlog.goals==0))
+		return turned, turned or (inlog and (inlog.complete or #inlog.goals==0)), nil, nil
 	end
 
 	
@@ -196,7 +196,7 @@ function Goal:IsComplete()
 		end
 
 		if completed then
-			return true,true
+			return true,true,nil,nil
 		end
 		-- else fall-through
 	end
@@ -210,7 +210,7 @@ function Goal:IsComplete()
 
 		-- if the quest was done, the goal is done and over with. Bye.
 		if ZGV.completedQuests[self.questid]
-		or (ZGV.instantQuests[self.questid] and self.quest and ZGV.completedQuestTitles[self.quest]) then return true,true end
+		or (ZGV.instantQuests[self.questid] and self.quest and ZGV.completedQuestTitles[self.quest]) then return true,true,nil,nil end
 
 		-- if the quest cannot be completed, and we're not a futureproof goal, bail.
 		--if not ZGV:IsQuestPossible(self.questid) and not self.future then return false,false end
@@ -226,29 +226,29 @@ function Goal:IsComplete()
 
 				if questGoalData then
 					if questGoalData.complete then
-						return true, true
+						return true, true, nil, nil
 					else
 						local current, count = GetQuestBoundGoalCount(self, questGoalData)
 						if current>=count then
-							return true, true
+							return true, true, nil, nil
 						else
 							--ZGV:Debug("Not yet completed: "..questself.num.."/"..questgoal.needed)
-							return false, true, current/count
+							return false, true, current/count, count
 						end
 					end
 				else
 					--ZGV:Debug("No goal "..goal)
 					ZGV:Print("WARNING: quest has no such goal! Step "..self.parentStep.num..", line "..(self.num)..", quest "..(self.questid or self.quest)..", goal "..(self.objnum or -1))
-					return false, true
+					return false, true, nil, nil
 				end
 			else
 				if not self.action or self.action=="" then
 					-- okay, this is a simple "complete the quest" check
-					return questInLog.complete,true
+					return questInLog.complete,true,nil,nil
 				end
 				-- pure questbound? complete if the whole quest is complete...
 				-- or not. Just drop.
-				
+
 				--[[
 				if questInLog.complete or #questInLog.goals==0 then
 					return true,true
@@ -261,7 +261,7 @@ function Goal:IsComplete()
 			-- if quest is not in log, then it usually means screw its links as well.
 			-- Unless we're a future-proof goal, which drops through.
 			if not self.future then
-				return false,false
+				return false,false,nil,nil
 			end
 		end
 	end
@@ -272,9 +272,9 @@ function Goal:IsComplete()
 		local itemid = self.targetid
 		if itemid then
 			local count = GetItemCount(itemid)
-			return count == 0, true
+			return count == 0, true, nil, nil
 		end
-		return false, true
+		return false, true, nil, nil
 
 	elseif self.action=="ding" then
 		local percent
@@ -282,10 +282,10 @@ function Goal:IsComplete()
 		if ZGV.db.char.fakelevel and ZGV.db.char.fakelevel>0 then level=ZGV.db.char.fakelevel end
 		percent = (level<self.level-1) and 0 or (level>=self.level) and 1.0 or UnitXP("player")/UnitXPMax("player")
 
-		return UnitLevel("player")>=tonumber(self.level), UnitLevel("player")>=tonumber(self.level)-1, percent
+		return UnitLevel("player")>=tonumber(self.level), UnitLevel("player")>=tonumber(self.level)-1, percent, nil
 	elseif self.action=="goto" then
 		local zone = GetRealZoneText()
-		if self.map and zone~=self.map then return false,true end
+		if self.map and zone~=self.map then return false,true,nil,nil end
 
 		local step = self.parentStep
 		local firstgoto
@@ -302,7 +302,7 @@ function Goal:IsComplete()
 			if firstgoto and not self_is_firstgoto and not ZGV.stepFirstGotoReached[step] then
 				-- In repeating-until route steps, force each new cycle to begin by
 				-- re-reaching the first route point before later points can complete.
-				return false,true,0
+				return false,true,0,nil
 			end
 		end
 
@@ -321,15 +321,15 @@ function Goal:IsComplete()
 				if step and self_is_firstgoto then
 					ZGV.stepFirstGotoReached[step] = true
 				end
-				return true,true,1
+				return true,true,1,nil
 			end
 		end
 
 		if ZGV.recentlyVisitedCoords[self] then
 			if self.achieveid then
-				return false, true, 0.99
+				return false, true, 0.99, nil
 			end
-			return true, true
+			return true, true, nil, nil
 		end
 		if self.x then
 			local px,py = GetPlayerMapPosition("player")
@@ -340,7 +340,7 @@ function Goal:IsComplete()
 				px,py = GetPlayerMapPosition("player")
 			end
 			if not px or not py or (px==0 and py==0) then
-				return false, true
+				return false, true, nil, nil
 			end
 			local gx,gy,dist = self.x/100,self.y/100,self.dist/100
 			local realdist2 = (px-gx)*(px-gx) + (py-gy)*(py-gy)
@@ -350,68 +350,68 @@ function Goal:IsComplete()
 					ZGV.stepFirstGotoReached[step] = true
 				end
 				if self.achieveid then
-					return false, true, 0.99
+					return false, true, 0.99, nil
 				end
-				return true, true
+				return true, true, nil, nil
 			else
 				local prog = 1-((realdist2-dist*dist)*500)
 				if prog<0 then prog=0 end
 				if prog>1 then prog=1 end
-				return false, true, prog
+				return false, true, prog, nil
 			end
 		else
-			return true,true
+			return true,true,nil,nil
 		end
 	elseif self.action=="confirm" then
 		local complete = ZGV.recentlyCompletedGoals[self] or ZGV.recentlyStickiedGoals[self]
-		return complete and true or false, true, complete and 1 or 0
+		return complete and true or false, true, complete and 1 or 0, nil
 	elseif self.action=="hearth" then
-		return GetZoneText()==self.param or GetMinimapZoneText()==self.param or GetSubZoneText()==self.param, true
+		return GetZoneText()==self.param or GetMinimapZoneText()==self.param or GetSubZoneText()==self.param, true, nil, nil
 	elseif self.action=="home" then
 		--return GetBindLocation("player")==self.home, true  -- didn't work well
-		return ZGV.recentlyHomeChanged, true
+		return ZGV.recentlyHomeChanged, true, nil, nil
 	elseif self.action=="fpath" then
 		local taxi = ZGV.LibTaxi and ZGV.LibTaxi.TaxiNames_English and ZGV.LibTaxi.TaxiNames_English[self.param] or self.param
-		return (ZGV.db.char.taxis[taxi] or ZGV.recentlyDiscoveredFlightpath or RecentTaxiMapMatchesFPath(self)), true
+		return (ZGV.db.char.taxis[taxi] or ZGV.recentlyDiscoveredFlightpath or RecentTaxiMapMatchesFPath(self)), true, nil, nil
 	elseif self.action=="collect" or self.action=="goldcollect" or self.action=="buy" then
 		local got = GetItemCount(self.target)
 		local progress = got/self.count
 		if self.exact then
-			return got==self.count, true, got<=self.count and progress or 0
+			return got==self.count, true, got<=self.count and progress or 0, self.count
 		else
-			return got>=self.count, true, progress>1 and 1 or progress
+			return got>=self.count, true, progress>1 and 1 or progress, self.count
 		end
 	elseif self.action=="havebuff" then
 		for i=1,30 do
 			local name,_,tex = UnitBuff("player",i)
-			if name and (tex:find(self.buff) or name:find(self.buff)) then return true,true end
+			if name and (tex:find(self.buff) or name:find(self.buff)) then return true,true,nil,nil end
 			local name,_,tex = UnitDebuff("player",i)
-			if name and (tex:find(self.buff) or name:find(self.buff)) then return true,true end
+			if name and (tex:find(self.buff) or name:find(self.buff)) then return true,true,nil,nil end
 		end
-		return false,true
+		return false,true,nil,nil
 	elseif self.action=="nobuff" then
 		for i=1,30 do
 			local name,_,tex = UnitBuff("player",i)
-			if name and (tex:find(self.buff) or name:find(self.buff)) then return false,true end
+			if name and (tex:find(self.buff) or name:find(self.buff)) then return false,true,nil,nil end
 			local name,_,tex = UnitDebuff("player",i)
-			if name and (tex:find(self.buff) or name:find(self.buff)) then return false,true end
+			if name and (tex:find(self.buff) or name:find(self.buff)) then return false,true,nil,nil end
 		end
-		return true,true
+		return true,true,nil,nil
 	elseif self.action=="invehicle" then
-		return UnitInVehicle("player"),true
+		return UnitInVehicle("player"),true,nil,nil
 	elseif self.action=="outvehicle" then
-		return not UnitInVehicle("player"),true
+		return not UnitInVehicle("player"),true,nil,nil
 	elseif self.action=="equipped" then
 		local link = GetInventoryItemLink("player",self.slot)
 		local name
 		if link then name = link:match("|Hitem:.-%[(.-)%]") end
-		return name and name==self.item , GetItemCount(self.item)>0
+		return name and name==self.item , GetItemCount(self.item)>0, nil, nil
 	elseif self.action=="rep" then
 		local rep = ZGV:GetReputation(self.faction)
 		if rep then
-			return rep.standing>=self.rep, true, 1-(rep:CalcTo(self.rep)/(rep.max-rep.min)) or 0
+			return rep.standing>=self.rep, true, 1-(rep:CalcTo(self.rep)/(rep.max-rep.min)) or 0, nil
 		else
-			return nil,nil,nil
+			return nil,nil,nil,nil
 		end
 	elseif self.action=="condition" then
 		return self:condition_complete()
@@ -423,7 +423,7 @@ function Goal:IsComplete()
 				if not required or required==0 then required=1 end
 				if not quantity then quantity = 0 end
 				if quantity>required then quantity=required end
-				return not not completed, true, quantity/required
+				return not not completed, true, quantity/required, required
 			else
 				-- full achievement
 				local id, name, points, completed = GetAchievementInfo(self.achieveid)
@@ -436,24 +436,24 @@ function Goal:IsComplete()
 					if quantity>required then quantity=required end
 					completenum=completenum+quantity/required
 				end
-				return not not completed, true, numcrit>0 and completenum/numcrit or 0
+				return not not completed, true, numcrit>0 and completenum/numcrit or 0, nil
 			end
 		else
-			return nil,nil,nil
+			return nil,nil,nil,nil
 		end
 	elseif self.action=="skill" then
 		local skill = ZGV:GetSkill(self.skill)
-		return skill.level>=self.skilllevel,skill.max>=self.skilllevel
+		return skill.level>=self.skilllevel,skill.max>=self.skilllevel, nil, nil
 	elseif self.action=="skillmax" then
-		return ZGV:GetSkill(self.skill).max>=self.skilllevel,true
+		return ZGV:GetSkill(self.skill).max>=self.skilllevel,true, nil, nil
 	elseif self.action=="learn" then
-		return ZGV.db.char.RecipesKnown[self.recipeid] or (self.recipe and ZGV.recentlyLearnedRecipes[self.recipe]), true
+		return ZGV.db.char.RecipesKnown[self.recipeid] or (self.recipe and ZGV.recentlyLearnedRecipes[self.recipe]), true, nil, nil
 	elseif self.action=="kill" and self.usekillcount then --killcount version
 		local count = ZGV.recentKills[self.target]
-		return count and count>=self.count, true
+		return count and count>=self.count, true, count, self.count
 	end
 
-	return false,false
+	return false,false,nil,nil
 end
 
 function FindPetActionInfo(action)
