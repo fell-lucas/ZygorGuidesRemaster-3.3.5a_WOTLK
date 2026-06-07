@@ -5289,26 +5289,37 @@ function me:UpdateFrame(full,onupdate,nonsecure_only)
 					end
 
 					-- Party Sync: compact per-goal party status block.
-					-- One sub-line per progress-based goal (those with a `count`:
-					-- kill/get/collect/goldcollect/buy/goal) with party members
-					-- on the same step. Skips info, accept, turnin, talk, goto,
-					-- and other single-shot actions. Skips hidden and route-focus
-					-- siblings. Always style 1.
+					-- One sub-line per progress-based goal with party members
+					-- on the same step. Two flavors of "progress goal":
+					--   1. count-bearing (collect/buy/goldcollect/achieve-sub/
+					--      kill usekillcount/quest-bound get/goal/kill):
+					--      wire emits "X/Y" where Y = self.count.
+					--   2. fraction-only (ding/level, rep, achieve without sub,
+					--      goto): wire emits "X/100" (synthesized percent scale
+					--      in Sync.lua's GetStepStatusString).
+					-- Skips info, accept, turnin, talk, hearth, home, fpath,
+					-- confirm, skill, havebuff/nobuff, equipped, and other
+					-- single-shot or boolean-progress actions. Skips hidden
+					-- and route-focus siblings. Always style 1.
 					if stepnum==self.CurrentStepNum and ZGV.Sync and ZGV.Sync:IsEnabled() then
 						for _, pg in ipairs(stepdata.goals) do
+							local isProgressGoal = pg.count
+								or pg.action == "ding"
+								or pg.action == "rep"
+								or pg.action == "achieve"
+								or pg.action == "goto"
 							if pg.action ~= "info"
-							   and pg.count
+							   and isProgressGoal
 							   and pg:GetStatus() ~= "hidden"
 							   and not (routefocus and pg.routegroup and pg ~= routefocus)
 							then
 								local partytext = ZGV.Sync:GetStepProgressGoalPartyText(stepnum, pg.num)
 								if partytext and line <= maxlines and frame.lines[line] then
-									local goallabel = pg:GetText(false) or ""
 									frame.lines[line].labelOffsetX = ZGV.ICON_INDENT
 									frame.lines[line].labelOffsetY = 0
 									self:ApplyGuideLineLabelLayout(frame.lines[line])
 									frame.lines[line].label:SetFont(FONT,round(self.db.profile.fontsecsize))
-									frame.lines[line].label:SetText(("|cffaaaaaa%s: %s|r"):format(goallabel, partytext))
+									frame.lines[line].label:SetText("|cffaaaaaa"..partytext.."|r")
 									frame.lines[line].goal = nil
 									line = line + 1
 								end

@@ -134,19 +134,35 @@ local function GetStepStatusString(step)
 	-- 4-value contract: (complete, possible, numdone, numneeded) — WOTLK
 	-- Goal:IsComplete() was patched in Phase 2 to return 4 values.
 	--
-	-- Note: for some actions (collect/buy/achieve-sub/ding/rep/goto) the
-	-- 3rd return is a FRACTION in [0,1] rather than an integer count.
-	-- Pointer.lua converts this to an integer via `count * progress`. The
-	-- wire format here must do the same or the receiving side sees a
-	-- truncated integer (e.g. 0/8 for any partial progress on a
-	-- `collect 8` goal). We detect fractions as `numdone ~= floor(numdone)`
-	-- and convert accordingly. Integer cases (kill with usekillcount,
-	-- confirm) pass through unchanged.
+	-- Wire-format conversion for each goal action:
+	--   * "c" — complete (e.g. accept/turnin/confirm just-done)
+	--   * "i" — incomplete, no numeric count (single-shot travel, talk,
+	--           goto with no .x coords, or nil numdone)
+	--   * "X/Y" — progress with scale. Two flavors:
+	--       1. native numneeded (collect/buy/goldcollect/achieve-sub/
+	--          kill usekillcount): numdone is either an integer or a
+	--          fraction in [0,1]; convert fraction to integer count.
+	--       2. synthesized numneeded=100 (ding/level, rep, achieve
+	--          without sub, goto with coords): numdone is a fraction
+	--          in [0,1] and numneeded is nil. Treat fraction as a
+	--          percent 0-100. See synthesis block below.
 	local goals = {}
 	local req = step:AreRequirementsMet()  -- WOTLK Step:AreRequirementsMet() takes no args.
 	for gi, goal in ipairs(step.goals or {}) do
 		local completable = req and goal:IsCompleteable() and goal:IsCompleteable()
 		local complete, possible, numdone, numneeded = goal:IsComplete()
+		-- For fraction-only goals (ding/rep/achieve-no-sub/goto) the 3rd
+		-- return is a fraction in [0,1] but numneeded is nil. Synthesize
+		-- a percent scale so the wire payload becomes "X/100" (e.g. "75/100"
+		-- for "75% of the way to the goal"). This matches the X/Y format
+		-- used by collect/buy so receivers render uniformly. If numdone
+		-- is also nil (e.g. goto with no .x coords), fall through to "i".
+		if not numneeded and numdone and numdone ~= math.floor(numdone) then
+			numdone = math.floor(numdone * 100 + 0.5)
+			if numdone < 0 then numdone = 0
+			elseif numdone > 100 then numdone = 100 end
+			numneeded = 100
+		end
 		local c
 		if not completable then
 			c = "-"
@@ -418,6 +434,15 @@ function Sync:GetStepProgressGoalPartyText(stepnum, goalnum)
 	if not self:IsEnabled() or not self.PartyStatus then return end
 	local s = ""
 	local on_step = 0
+	-- Suppress the sub-line when no member has a numeric count to show
+	-- AND no member is complete. Both are useless-redundant with the
+	-- ahead/behind footer (which already says who's on the step); the
+	-- X/Y and complete-green forms are the actual information the user
+	-- needs. Without this gate, fraction-only actions like `goto` with
+	-- no .x coords or `ding` 2+ levels below the target would render
+	-- bare-name sub-lines for every progress goal on the step.
+	local has_count = false
+	local has_complete = false
 	local partysort = {}
 	-- 3.3.5a: no LE_PARTY_CATEGORY_HOME; IsInGroup() is the gate.
 	if IsInGroup() then
@@ -447,8 +472,10 @@ function Sync:GetStepProgressGoalPartyText(stepnum, goalnum)
 					on_step = on_step + 1
 					if goal.complete then
 						s = s .. progress_complete_color .. name .. "|r"
+						has_complete = true
 					elseif goal.done and goal.needed then
 						s = s .. (progress_partial_color .. "%s %d/%d|r"):format(name, goal.done, goal.needed)
+						has_count = true
 					else
 						s = s .. progress_unstarted_color .. name .. "|r"
 					end
@@ -456,7 +483,7 @@ function Sync:GetStepProgressGoalPartyText(stepnum, goalnum)
 			end
 		end
 	end
-	if on_step > 0 then return s end
+	if on_step > 0 and (has_count or has_complete) then return s end
 end
 
 -- =====================================================================
