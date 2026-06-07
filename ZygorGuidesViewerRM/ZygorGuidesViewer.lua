@@ -4608,8 +4608,8 @@ function me:TryToCompleteStep(force)
 		--self.pause=nil
 	end
 
-	-- Magnetic sync gate: when sync is enabled and snapping, slaves wait
-	-- for party members on the same step to complete before advancing.
+	-- Magnetic sync gate: when sync is enabled, halt local auto-advance
+	-- if any party member on the same step is not yet complete.
 	if completing and self.Sync and self.Sync:IsEnabled() then
 		if not self.Sync:IsClearToProceed(self.CurrentStepNum) then
 			self.Sync:Debug("Waiting for party members to complete step.")
@@ -7867,9 +7867,6 @@ function me:RaceClassMatchList(list)
 end
 
 function me:SkipStep(delta,fast)
-	-- Slaves can't skip steps manually — they follow the master.
-	if self.Sync and self.Sync:IsSlave() then return end
-
 	if not self.CurrentGuide then return end
 
 	if self:InlineButtonsEnabled() and InCombatLockdown() then
