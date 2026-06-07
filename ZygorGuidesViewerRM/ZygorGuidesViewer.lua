@@ -4399,6 +4399,7 @@ function me:FocusStep(num,quiet)
 	self.CurrentStep:PrepareCompletion()
 
 	self.stepchanged = true
+	self:SendMessage("ZGV_STEP_CHANGED", num)
 
 	for i,goal in ipairs(self.CurrentStep.goals) do
 		if goal:IsComplete() then self.recentlyCompletedGoals[goal]=true end
@@ -5285,6 +5286,34 @@ function me:UpdateFrame(full,onupdate,nonsecure_only)
 							line=line+1
 						end
 						--]]
+					end
+
+					-- Party Sync: compact per-goal party status block.
+					-- One sub-line per progress-based goal (those with a `count`:
+					-- kill/get/collect/goldcollect/buy/goal) with party members
+					-- on the same step. Skips info, accept, turnin, talk, goto,
+					-- and other single-shot actions. Skips hidden and route-focus
+					-- siblings. Always style 1.
+					if stepnum==self.CurrentStepNum and ZGV.Sync and ZGV.Sync:IsEnabled() then
+						for _, pg in ipairs(stepdata.goals) do
+							if pg.action ~= "info"
+							   and pg.count
+							   and pg:GetStatus() ~= "hidden"
+							   and not (routefocus and pg.routegroup and pg ~= routefocus)
+							then
+								local partytext = ZGV.Sync:GetStepProgressGoalPartyText(stepnum, pg.num)
+								if partytext and line <= maxlines and frame.lines[line] then
+									local goallabel = pg:GetText(false) or ""
+									frame.lines[line].labelOffsetX = ZGV.ICON_INDENT
+									frame.lines[line].labelOffsetY = 0
+									self:ApplyGuideLineLabelLayout(frame.lines[line])
+									frame.lines[line].label:SetFont(FONT,round(self.db.profile.fontsecsize))
+									frame.lines[line].label:SetText(("|cffaaaaaa%s: %s|r"):format(goallabel, partytext))
+									frame.lines[line].goal = nil
+									line = line + 1
+								end
+							end
+						end
 					end
 
 					local TMP_TRUNCATE = true
@@ -6356,6 +6385,10 @@ function me:UpdateFrameCurrent(nonsecure_only)
 				end
 
 				local status,detail = goal:GetStatus()
+				if self.recentlyCompletedGoals[goal] and status ~= "complete" and goal.num then
+					self.recentlyCompletedGoals[goal] = false
+					self:SendMessage("ZGV_GOAL_UNCOMPLETED", self.CurrentStepNum, goal.num)
+				end
 				local is_routegoal = goal.routegroup
 				local route_icon = (goal.routekind=="loop")
 					and "Interface\\AddOns\\ZygorGuidesViewerRM\\Skins\\route-marker-loop.tga"
@@ -6382,7 +6415,7 @@ function me:UpdateFrameCurrent(nonsecure_only)
 					back:SetVertexColor(0.0,0.0,0.0,0)
 
 				elseif status=="incomplete" then
-				
+
 					local progress = type(detail)=="number" and detail or 0
 
 					local gc = self:GetEffectiveGoalColors()
@@ -6405,12 +6438,19 @@ function me:UpdateFrameCurrent(nonsecure_only)
 					if anim_w2r:IsDone() or not anim_w2r:IsPlaying() then
 						back:SetVertexColor(r,g,b,a)
 					end
+					local prev_progress = self.recentGoalProgress[goal]
 					self.recentGoalProgress[goal] = progress
+					if prev_progress ~= progress and goal.num then
+						self:SendMessage("ZGV_GOAL_PROGRESS", self.CurrentStepNum, goal.num)
+					end
 
 				elseif status=="complete" then
 
 					if not self.recentlyCompletedGoals[goal] then
 						self.recentlyCompletedGoals[goal]=true
+						if goal.num then
+							self:SendMessage("ZGV_GOAL_COMPLETED", self.CurrentStepNum, goal.num)
+						end
 						if self.db.profile.goalcompletionflash or self.db.profile.goalupdateflash and self.frameNeedsResizing==0 then
 							anim_w2g:Play()
 							self:Debug("Animating completion.")

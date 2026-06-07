@@ -34,6 +34,8 @@ local PACKETTYPE_SLAVEREQUEST  = "MS"  -- "let me be a slave"
 
 local PARTY_STATUS_TIMEOUT = 2.0
 
+local STALL_THRESHOLD = 300  -- 5 minutes
+
 -- 3.3.5a-safe lib imports. AceComm + LibDeflate are vendored in WOTLK
 -- Libs/ and loaded via embeds.xml (Phase 1).
 local AceComm    = LibStub("AceComm-3.0")
@@ -161,6 +163,15 @@ Sync.ReinviteOrStopPopup = nil
 local function GetStepStatusString(step)
 	-- 4-value contract: (complete, possible, numdone, numneeded) — WOTLK
 	-- Goal:IsComplete() was patched in Phase 2 to return 4 values.
+	--
+	-- Note: for some actions (collect/buy/achieve-sub/ding/rep/goto) the
+	-- 3rd return is a FRACTION in [0,1] rather than an integer count.
+	-- Pointer.lua converts this to an integer via `count * progress`. The
+	-- wire format here must do the same or the receiving side sees a
+	-- truncated integer (e.g. 0/8 for any partial progress on a
+	-- `collect 8` goal). We detect fractions as `numdone ~= floor(numdone)`
+	-- and convert accordingly. Integer cases (kill with usekillcount,
+	-- confirm) pass through unchanged.
 	local goals = {}
 	local req = step:AreRequirementsMet()  -- WOTLK Step:AreRequirementsMet() takes no args.
 	for gi, goal in ipairs(step.goals or {}) do
@@ -172,6 +183,12 @@ local function GetStepStatusString(step)
 		elseif complete then
 			c = "c"
 		elseif possible and numdone and numneeded then
+			if numdone ~= math.floor(numdone) then
+				-- fraction: convert to integer count, clamped to [0, numneeded]
+				numdone = math.floor(numdone * numneeded + 0.5)
+				if numdone < 0 then numdone = 0
+				elseif numdone > numneeded then numdone = numneeded end
+			end
 			c = ("%d/%d"):format(numdone, numneeded)
 		else
 			c = "i"
@@ -681,15 +698,24 @@ end
 -- PARTY GOAL STATUS TEXT (for display)
 -- =====================================================================
 
-local statuscolors  = { [0] = "ffff0000", [1] = "ff00ff00", [2] = "ff888888" }
-local statuscolors2 = { [0] = "ffff8888", [1] = "ff00ff00", [2] = "ff888888" }
-local statustext    = { [0] = "incomplete", [1] = "complete", [2] = "impossible" }
+-- Per-member color codes used by GetStepProgressGoalPartyText.
+local progress_complete_color   = "|cff00ff00"  -- green
+local progress_partial_color    = "|cffff8888"  -- red
+local progress_unstarted_color  = "|cff888888"  -- grey
 
-function Sync:GetStepGoalPartyStatusText(stepnum, goalnum)
+-- GetStepProgressGoalPartyText(stepnum, goalnum)
+--
+-- Returns a formatted per-member breakdown for a single progress goal, e.g.
+--   "|cff00ff00Alice|r, |cffff8888Bob 2/5|r"
+-- (no trailing newline). The caller is expected to prepend the goal text
+-- and a separator, and to dim-grey the whole line.
+--
+-- Returns nil when Sync is disabled, the local player is not in a party,
+-- or no party members are on the same guide/step with status for this goal.
+function Sync:GetStepProgressGoalPartyText(stepnum, goalnum)
 	if not self:IsEnabled() or not self.PartyStatus then return end
 	local s = ""
 	local on_step = 0
-	local any_incomplete = false
 	local partysort = {}
 	-- 3.3.5a: no LE_PARTY_CATEGORY_HOME; IsInGroup() is the gate.
 	if IsInGroup() then
@@ -699,10 +725,11 @@ function Sync:GetStepGoalPartyStatusText(stepnum, goalnum)
 	else
 		for k in pairs(self.PartyStatus) do partysort[#partysort+1] = k end
 	end
+	local guide_title = (ZGV.CurrentGuide and ZGV.CurrentGuide.title or ""):gsub("^SHARED\\", "")
 	for i, name in ipairs(partysort) do
 		local status = self.PartyStatus[name]
 		if status then
-			local matches = status.guide and (status.guide:gsub("^SHARED\\", "") == ((ZGV.CurrentGuide and ZGV.CurrentGuide.title or ""):gsub("^SHARED\\", "")))
+			local matches = status.guide and (status.guide:gsub("^SHARED\\", "") == guide_title)
 			if matches then
 				local step
 				if status.stepnum == stepnum then
@@ -712,45 +739,22 @@ function Sync:GetStepGoalPartyStatusText(stepnum, goalnum)
 						if st.stepnum == stepnum then step = st break end
 					end
 				end
-				if step then
+				if step and step.goals and step.goals[goalnum] then
+					local goal = step.goals[goalnum]
 					if on_step > 0 then s = s .. ", " end
 					on_step = on_step + 1
-					local color, display
-					local goal = status.goals[goalnum]
-					local style = ZGV.db.profile.share_partydisplaystyle or 1
-					if style == 1 then
-						if not goal then color = 2
-						elseif goal.complete then color = 1
-						elseif goal.needed then
-							color = 0
-						else color = 2 end
-						s = s .. ("|c%s%s|r"):format(statuscolors2[color] or "ffff00ff", name)
-					elseif style == 2 then
-						if not goal then color = 2
-						elseif goal.complete then color = 1
-						elseif goal.needed then color = 0
-						else color = 2 end
-						s = s .. ("%s (%s)"):format(name, statustext[color] or "unknown")
+					if goal.complete then
+						s = s .. progress_complete_color .. name .. "|r"
+					elseif goal.done and goal.needed then
+						s = s .. (progress_partial_color .. "%s %d/%d|r"):format(name, goal.done, goal.needed)
 					else
-						if not goal then s = s .. ("%s |cff888888[?]|r"):format(name)
-						elseif goal.complete then s = s .. ("%s |cff88ff88[√]|r"):format(name)
-						elseif goal.done and goal.needed then s = s .. ("%s |cffff8888[%d/%d]|r"):format(name, goal.done, goal.needed)
-						else s = s .. ("%s |cff888888[?]|r"):format(name)
-						end
+						s = s .. progress_unstarted_color .. name .. "|r"
 					end
-					if status.goals[goalnum] ~= 1 then any_incomplete = true end
 				end
 			end
 		end
 	end
-	if on_step > 0 then
-		local style = ZGV.db.profile.share_partydisplaystyle or 1
-		if style == 1 then
-			return "Party: " .. s, nil
-		else
-			return s, statuscolors[any_incomplete and 0 or 1]
-		end
-	end
+	if on_step > 0 then return s end
 end
 
 -- =====================================================================
@@ -974,12 +978,14 @@ function Sync:ActivateAsMaster()
 	ZGV.db.profile.share_masterslave = 1
 	ZGV:SendMessage("ZGV_SHAREMODE", "master")
 	self:RequestSlaveMode()
+	self:UpdateMode()
 end
 
 function Sync:ActivateAsSlave()
 	ZGV.db.profile.sync_enabled = true
 	ZGV.db.profile.share_masterslave = 2
 	ZGV:SendMessage("ZGV_SHAREMODE", "slave")
+	self:UpdateMode()
 end
 
 function Sync:Deactivate()
@@ -1083,6 +1089,7 @@ function Sync.OnEvent(self_or_addon, event, ...)
 		Sync:OnPartyStatusChanged()
 		if Sync:IsInGroup() then
 			Sync:AnnounceStatus()
+			Sync:RequestPartyStatus()
 			if Sync:IsMaster() then Sync:BroadcastStepContents() end
 		else
 			Sync:Deactivate()
@@ -1097,6 +1104,7 @@ end
 
 local function on_step_changed()
 	if not Sync:IsEnabled() then return end
+	Sync._lastStepChangeTime = GetTime()
 	-- share_fakeparty is a no-op in v1.
 	if Sync:IsMaster() and Sync:IsInGroup() then
 		Sync:BroadcastStepContents()
@@ -1126,6 +1134,8 @@ function Sync:Init()
 	ZGV.db.profile.share_fakeparty      = 0
 	ZGV.db.profile.share_partydisplaystyle = 1
 	ZGV.db.profile.sync_dontconfirm     = false
+
+	self._lastStepChangeTime = GetTime()
 
 	-- AceComm registration.
 	if not self._AceCommHandler then
@@ -1163,11 +1173,20 @@ function Sync:Init()
 		end
 	end)
 
-	-- 20s heartbeat: re-announce + request party status.
+	-- 20s heartbeat: re-announce + request party status + stall check.
 	ZGV:ScheduleRepeatingTimer(function()
-		if Sync:IsEnabled() then
-			Sync:AnnounceStatus()
-			Sync:RequestPartyStatus()
+		if not Sync:IsEnabled() then return end
+		Sync:AnnounceStatus()
+		Sync:RequestPartyStatus()
+		if Sync:IsInGroup() and Sync:IsPartyStatusComplete()
+		   and ZGV.CurrentStepNum
+		   and (GetTime() - (Sync._lastStepChangeTime or GetTime())) > STALL_THRESHOLD
+		then
+			ZGV:SendMessage("ZGV_SYNC_STALLED",
+				ZGV.CurrentStepNum,
+				math.floor(GetTime() - Sync._lastStepChangeTime))
+			Sync:Debug("ZGV_SYNC_STALLED: step %d idle for %ds", ZGV.CurrentStepNum,
+				math.floor(GetTime() - Sync._lastStepChangeTime))
 		end
 	end, 20)
 
