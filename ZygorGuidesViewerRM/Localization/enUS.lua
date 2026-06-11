@@ -196,9 +196,9 @@ ZygorGuidesViewer_L("Main", "enUS", function() return {
 
 	['opt_sync_header'] = "Party sync",
 	['opt_sync_enabled'] = "Enable party sync",
-	['opt_sync_enabled_desc'] = "Share guide step progress with party members running Zygor Guides Remastered.",
+	['opt_sync_enabled_desc'] = "Share guide step progress with party members running Zygor Guides Remastered. Disabled in raids.",
 	['opt_sync_snap'] = "Wait for party before advancing",
-	['opt_sync_snap_desc'] = "When enabled, auto-advance pauses until all party members on the same step have completed it.",
+	['opt_sync_snap_desc'] = "When enabled, auto-advance pauses until all party members on the same step have completed it. Party only; disabled in raids.",
 	['sync_ahead_label'] = "Ahead: ",
 	['sync_behind_label'] = "Behind: ",
 	['sync_separator'] = "; ",

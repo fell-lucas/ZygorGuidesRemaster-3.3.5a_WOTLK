@@ -54,36 +54,30 @@ local function acecomm_handler(prefix, message, distribution, sender)
 	Sync:OnChatReceived(message, sender)
 end
 
--- 3.3.5a group API wrappers (IsInGroup/GetNumGroupMembers/GROUP_ROSTER_UPDATE are retail+).
-local function IsInGroupCompat()
-	return (GetNumPartyMembers() or 0) > 0 or (GetNumRaidMembers() or 0) > 0
+-- 3.3.5a party API wrappers. Sync is party-only (5-man); disabled in raids.
+local function NormalizePlayerName(name)
+	if not name then return nil end
+	local short = name:match("^(.-)%-")
+	return short or name
 end
 
-local function GetGroupCommDistribution()
-	if (GetNumRaidMembers() or 0) > 0 then return "RAID" end
-	return "PARTY"
+local function IsInRaidCompat()
+	return (GetNumRaidMembers() or 0) > 0
 end
 
--- Fill out[] with connected group member names (excludes self).
-local function CollectGroupMemberNames(out)
+local function IsInPartyCompat()
+	return not IsInRaidCompat() and (GetNumPartyMembers() or 0) > 0
+end
+
+-- Fill out[] with connected party member names (excludes self).
+local function CollectPartyMemberNames(out)
 	for i = 1, #out do out[i] = nil end
-	local raid = GetNumRaidMembers() or 0
-	if raid > 0 then
-		for i = 1, raid do
-			local unit = "raid" .. i
-			if UnitExists(unit) and not UnitIsUnit(unit, "player") and UnitIsConnected(unit) then
-				local name = UnitName(unit)
-				if name then out[#out + 1] = name end
-			end
-		end
-	else
-		local party = GetNumPartyMembers() or 0
-		for i = 1, party do
-			local unit = "party" .. i
-			if UnitExists(unit) and UnitIsConnected(unit) then
-				local name = UnitName(unit)
-				if name then out[#out + 1] = name end
-			end
+	local party = GetNumPartyMembers() or 0
+	for i = 1, party do
+		local unit = "party" .. i
+		if UnitExists(unit) and UnitIsConnected(unit) then
+			local name = NormalizePlayerName(UnitName(unit))
+			if name then out[#out + 1] = name end
 		end
 	end
 end
@@ -284,10 +278,8 @@ function Sync:SplitXXIntoPacket(packet, data)
 end
 
 function Sync:OnChatReceived(msg, sender)
-	-- Strip realm suffix on 3.3.5a Name-Realm format.
-	local sname = sender and sender:match("(.-)%-")
-	if sname then sender = sname end
-	if sender == UnitName("player") then return end
+	sender = NormalizePlayerName(sender)
+	if not sender or sender == NormalizePlayerName(UnitName("player")) then return end
 	self:Debug("|cffaaff00RCV |cffffffff[%s]: |r%s", tostring(sender), tostring(msg))
 
 	if not msg then self:Debug("No packet received") return end
@@ -421,8 +413,8 @@ function Sync:DeclarePartyStatusComplete()
 end
 
 function Sync:IsPartyStatusComplete()
-	if not IsInGroupCompat() then return true end
-	CollectGroupMemberNames(group_member_names)
+	if not IsInPartyCompat() then return true end
+	CollectPartyMemberNames(group_member_names)
 	for i = 1, #group_member_names do
 		local status = self.PartyStatus[group_member_names[i]]
 		if not status or (self.party_status_request_time and status.recv_time < self.party_status_request_time) then
@@ -479,8 +471,8 @@ function Sync:GetStepProgressGoalPartyText(stepnum, goalnum)
 	local has_count = false
 	local has_complete = false
 	local partysort = {}
-	if IsInGroupCompat() then
-		CollectGroupMemberNames(partysort)
+	if IsInPartyCompat() then
+		CollectPartyMemberNames(partysort)
 	else
 		for k in pairs(self.PartyStatus) do partysort[#partysort+1] = k end
 	end
@@ -553,11 +545,11 @@ end
 -- =====================================================================
 
 function Sync:IsInGroup()
-	return IsInGroupCompat()
+	return IsInPartyCompat()
 end
 
 function Sync:IsEnabled()
-	return ZGV.db.profile.sync_enabled and self:IsInGroup()
+	return ZGV.db.profile.sync_enabled and IsInPartyCompat()
 end
 
 function Sync:IsSnapping()
@@ -577,7 +569,7 @@ function Sync:Send(message, ...)
 	local message_encoded = LibDeflate:EncodeForWoWAddonChannel(message_packed)
 	if not message_encoded then return end
 
-	AceComm:SendCommMessage(PREFIX, message_encoded, GetGroupCommDistribution())
+	AceComm:SendCommMessage(PREFIX, message_encoded, "PARTY")
 	self:Debug("|cffffaa00SND|r: %s", tostring(message))
 	if select("#", ...) > 0 then return self:Send(...) end
 end
@@ -612,13 +604,13 @@ function Sync:RequestPartyStatus()
 end
 
 function Sync:ResetPartyStatus()
-	if not IsInGroupCompat() then
+	if not IsInPartyCompat() then
 		self.PartyStatus = {}
 		return
 	end
 	self.PartyStatus = self.PartyStatus or {}
 	local newps = {}
-	CollectGroupMemberNames(group_member_names)
+	CollectPartyMemberNames(group_member_names)
 	for i = 1, #group_member_names do
 		local name = group_member_names[i]
 		newps[name] = self.PartyStatus[name]
