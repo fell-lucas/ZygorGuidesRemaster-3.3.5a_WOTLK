@@ -194,6 +194,15 @@ ZygorGuidesViewer_L("Main", "enUS", function() return {
 	['opt_skipimpossible'] = "Skip impossible steps",
 	['opt_skipimpossible_desc'] = "Automatically skip impossible steps, if you don't want to be bothered with objectives belonging to quests you've skipped on purpose.",
 
+	['opt_sync_header'] = "Party sync",
+	['opt_sync_enabled'] = "Enable party sync",
+	['opt_sync_enabled_desc'] = "Share guide step progress with party members running Zygor Guides Remastered.",
+	['opt_sync_snap'] = "Wait for party before advancing",
+	['opt_sync_snap_desc'] = "When enabled, auto-advance pauses until all party members on the same step have completed it.",
+	['sync_ahead_label'] = "Ahead: ",
+	['sync_behind_label'] = "Behind: ",
+	['sync_separator'] = "; ",
+
 	['opt_group_progress_bottomdesc'] = "Dynamic progress works by marking quests as 'obsolete' when you are ahead of the guide's levels by more than the amount defined above. Quest chains are only marked as obsolete if the whole chain is obsolete.\n\nFor new players, this helps using the guides by intelligently skipping low level content, only stopping to pick up quest chains you'll still benefit from later on. If you want to find a good place to start following the guide, load the starting guide for your race and let the viewer skip whole large portions of the guide, until you are at a section proper for your level.\n\nFor experienced players, this ensures that the guide will never slow you down by giving you low-level quests, if you gain levels faster than the guide expects (for example if you run some instances or use the \"rested\" exp bonus). You can set how far ahead of the guide you want to allow yourself to be, before the guide starts \"pushing\" you forward by skipping quests.",
 
 	['opt_group_mapinternal'] = "Internal waypointer",
@@ -465,7 +474,7 @@ ZygorGuidesViewer_L("Main", "enUS", function() return {
 	["gb_opt_stepdisplay"] = "Step Display",
 	["gb_opt_desc_stepdisplay"] = "Viewer visuals, frame layout, skin/fonts, and step row/goal display controls.",
 	["gb_opt_progress"] = "Progression",
-	["gb_opt_desc_progress"] = "Step progression behavior, skipping rules, and completion flow.",
+	["gb_opt_desc_progress"] = "Step progression behavior, skipping rules, completion flow, and party sync.",
 	["gb_opt_travel"] = "Travel System",
 	["gb_opt_desc_travel"] = "Waypoint provider selection and travel-system behavior.",
 	["gb_opt_map"] = "Maps & Waypoints",
@@ -1158,9 +1167,6 @@ ZygorGuidesViewer_L("Specials", "enUS", function() return {
 
 	['contract_mobs_start'] = function(s) return s.." mobs" end,
 	['contract_mobs_end'] = function(s) return ZygorGuidesViewer_L("Specials")['plural'](s) end,
-	
-	sync_ahead = "|cff88ff88%s: Ahead (%d)|r",
-	sync_behind = "|cffff8888%s: Behind (%d)|r",
 } end)
 
 ZGVLPL = ZygorGuidesViewer_L("Plurals")

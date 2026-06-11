@@ -142,6 +142,9 @@ function me:Options_RegisterDefaults()
 			skipobsolete = true,
 			levelsahead = 0,
 
+			sync_enabled = true,
+			sync_snap = true,
+
 			hidearrowwithguide = true,
 			iconAlpha = 1,
 			iconScale = .5,
@@ -1035,6 +1038,29 @@ function me:Options_DefineOptions()
 				bigStep = 1,
 				width="single",
 				order = 10
+			},
+
+			sync_header = {
+				type = "header",
+				name = L["opt_sync_header"],
+				order = 10.5,
+			},
+			sync_enabled = {
+				name = L["opt_sync_enabled"],
+				desc = L["opt_sync_enabled_desc"],
+				type = "toggle",
+				set = function(i, v) Setter_Simple(i, v) self:UpdateFrame() end,
+				width = "full",
+				order = 10.6,
+			},
+			sync_snap = {
+				name = L["opt_sync_snap"],
+				desc = L["opt_sync_snap_desc"],
+				type = "toggle",
+				set = function(i, v) Setter_Simple(i, v) self:UpdateFrame() end,
+				disabled = function() return not self.db.profile.sync_enabled end,
+				width = "full",
+				order = 10.7,
 			},
 
 			desc1 = { type="header", name=L["opt_progressbackcolor_desc"], order=11 },

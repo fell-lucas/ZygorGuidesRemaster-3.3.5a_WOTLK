@@ -54,6 +54,42 @@ local function acecomm_handler(prefix, message, distribution, sender)
 	Sync:OnChatReceived(message, sender)
 end
 
+-- 3.3.5a group API wrappers (IsInGroup/GetNumGroupMembers/GROUP_ROSTER_UPDATE are retail+).
+local function IsInGroupCompat()
+	return (GetNumPartyMembers() or 0) > 0 or (GetNumRaidMembers() or 0) > 0
+end
+
+local function GetGroupCommDistribution()
+	if (GetNumRaidMembers() or 0) > 0 then return "RAID" end
+	return "PARTY"
+end
+
+-- Fill out[] with connected group member names (excludes self).
+local function CollectGroupMemberNames(out)
+	for i = 1, #out do out[i] = nil end
+	local raid = GetNumRaidMembers() or 0
+	if raid > 0 then
+		for i = 1, raid do
+			local unit = "raid" .. i
+			if UnitExists(unit) and not UnitIsUnit(unit, "player") and UnitIsConnected(unit) then
+				local name = UnitName(unit)
+				if name then out[#out + 1] = name end
+			end
+		end
+	else
+		local party = GetNumPartyMembers() or 0
+		for i = 1, party do
+			local unit = "party" .. i
+			if UnitExists(unit) and UnitIsConnected(unit) then
+				local name = UnitName(unit)
+				if name then out[#out + 1] = name end
+			end
+		end
+	end
+end
+
+local group_member_names = {}
+
 --[[
 "MAGNETIC" SYNC:
 
@@ -384,12 +420,11 @@ function Sync:DeclarePartyStatusComplete()
 	end
 end
 
--- 3.3.5a parties cap at 4 others (plus self) — GetNumGroupMembers() total.
 function Sync:IsPartyStatusComplete()
-	if not IsInGroup() then return true end
-	local n = GetNumGroupMembers()
-	for i = 1, n - 1 do
-		local status = self.PartyStatus[UnitName("party" .. i)]
+	if not IsInGroupCompat() then return true end
+	CollectGroupMemberNames(group_member_names)
+	for i = 1, #group_member_names do
+		local status = self.PartyStatus[group_member_names[i]]
 		if not status or (self.party_status_request_time and status.recv_time < self.party_status_request_time) then
 			return false
 		end
@@ -444,11 +479,8 @@ function Sync:GetStepProgressGoalPartyText(stepnum, goalnum)
 	local has_count = false
 	local has_complete = false
 	local partysort = {}
-	-- 3.3.5a: no LE_PARTY_CATEGORY_HOME; IsInGroup() is the gate.
-	if IsInGroup() then
-		for i = 1, GetNumGroupMembers() - 1 do
-			partysort[#partysort+1] = UnitName("party" .. i)
-		end
+	if IsInGroupCompat() then
+		CollectGroupMemberNames(partysort)
 	else
 		for k in pairs(self.PartyStatus) do partysort[#partysort+1] = k end
 	end
@@ -510,8 +542,8 @@ function Sync:GetAheadBehind()
 	end
 	if #wipetable > 0 or #behindtable > 0 then
 		local s = ""
-		if #wipetable > 0 then s = "Ahead: " .. table.concat(wipetable, ", ") end
-		if #behindtable > 0 then s = s .. (#s > 0 and "; " or "") .. "Behind: " .. table.concat(behindtable, ", ") end
+		if #wipetable > 0 then s = L["sync_ahead_label"] .. table.concat(wipetable, ", ") end
+		if #behindtable > 0 then s = s .. (#s > 0 and L["sync_separator"] or "") .. L["sync_behind_label"] .. table.concat(behindtable, ", ") end
 		return s
 	end
 end
@@ -521,7 +553,7 @@ end
 -- =====================================================================
 
 function Sync:IsInGroup()
-	return IsInGroup()
+	return IsInGroupCompat()
 end
 
 function Sync:IsEnabled()
@@ -545,7 +577,7 @@ function Sync:Send(message, ...)
 	local message_encoded = LibDeflate:EncodeForWoWAddonChannel(message_packed)
 	if not message_encoded then return end
 
-	AceComm:SendCommMessage(PREFIX, message_encoded, "PARTY")
+	AceComm:SendCommMessage(PREFIX, message_encoded, GetGroupCommDistribution())
 	self:Debug("|cffffaa00SND|r: %s", tostring(message))
 	if select("#", ...) > 0 then return self:Send(...) end
 end
@@ -580,19 +612,16 @@ function Sync:RequestPartyStatus()
 end
 
 function Sync:ResetPartyStatus()
-	if not IsInGroup() then
+	if not IsInGroupCompat() then
 		self.PartyStatus = {}
 		return
 	end
 	self.PartyStatus = self.PartyStatus or {}
 	local newps = {}
-	local n = GetNumGroupMembers()
-	for i = 1, n - 1 do
-		local unit = "party" .. i
-		if UnitExists(unit) and UnitIsConnected(unit) then
-			local name = UnitName(unit)
-			newps[name] = self.PartyStatus[name]
-		end
+	CollectGroupMemberNames(group_member_names)
+	for i = 1, #group_member_names do
+		local name = group_member_names[i]
+		newps[name] = self.PartyStatus[name]
 	end
 	self.PartyStatus = newps
 end
@@ -604,8 +633,9 @@ end
 function Sync.OnEvent(self_or_addon, event, ...)
 	-- AceEvent-3.0 calls handlers as (self, event, ...).
 	-- Accept either signature; route to :ResetPartyStatus + status update.
-	if event == "GROUP_ROSTER_UPDATE" or event == "PARTY_MEMBER_DISABLE"
-		or event == "PARTY_MEMBER_ENABLE" or event == "PLAYER_ENTERING_WORLD" then
+	if event == "PARTY_MEMBERS_CHANGED" or event == "RAID_ROSTER_UPDATE"
+		or event == "PARTY_MEMBER_DISABLE" or event == "PARTY_MEMBER_ENABLE"
+		or event == "PLAYER_ENTERING_WORLD" then
 		Sync:ResetPartyStatus()
 		Sync:OnPartyStatusChanged()
 		if Sync:IsInGroup() then
@@ -625,7 +655,7 @@ local function on_step_changed()
 	Sync:AnnounceStatus()
 end
 
-local function on_step_changed_msg(_, _)
+local function on_step_changed_msg(stepNum)
 	-- Cancel-and-reschedule debounce: collapse bursts of step changes into
 	-- a single delayed broadcast. Replaces TBC's ZGV:Throttler.
 	if Sync.StepChangeTimer then ZGV:CancelTimer(Sync.StepChangeTimer) end
@@ -636,16 +666,12 @@ end
 -- INIT
 -- =====================================================================
 
-local function apply_default_profile()
-	ZGV.db.profile.sync_enabled = true
-	ZGV.db.profile.sync_snap    = true
-end
-
 -- Event hooks for party events. Roster changes reset party state and
 -- request fresh status from everyone (TBC parity: new joiners see full
 -- state in <1s instead of waiting 20s for the heartbeat).
 local function register_event_handlers()
-	ZGV:AddEventHandler("GROUP_ROSTER_UPDATE", Sync.OnEvent)
+	ZGV:AddEventHandler("PARTY_MEMBERS_CHANGED", Sync.OnEvent)
+	ZGV:AddEventHandler("RAID_ROSTER_UPDATE", Sync.OnEvent)
 	ZGV:AddEventHandler("PARTY_MEMBER_DISABLE", Sync.OnEvent)
 	ZGV:AddEventHandler("PARTY_MEMBER_ENABLE", Sync.OnEvent)
 	ZGV:AddEventHandler("PLAYER_ENTERING_WORLD", Sync.OnEvent)
@@ -657,7 +683,7 @@ end
 local function register_message_handlers()
 	-- Helper: wrap a status-announce + debug handler behind the IsEnabled gate.
 	local function reannounce(msg_label)
-		return function(_, _, step, goal)
+		return function(step, goal)
 			if Sync:IsEnabled() then
 				Sync:Debug("%s: %d %d", msg_label, step, goal)
 				Sync:AnnounceStatus()
@@ -690,7 +716,6 @@ local function start_heartbeat()
 end
 
 function Sync:Init()
-	apply_default_profile()
 	self._lastStepChangeTime = GetTime()
 
 	AceComm:RegisterComm(PREFIX, acecomm_handler)
