@@ -164,6 +164,15 @@ This addon is fully open source and can be inspected before use.
 
 ## Changelog
 
+### Revision 192 - 3.0.192
+
+- Fixed Talent Advisor saved-build restoration so selected Zygor leveling builds survive relog/reload and remain ready for auto-learn.
+- Fixed ruRU flight-path guide steps that could stall when guide-authored English `fpath` names did not match localized taxi names; opening the flight master now advances matching nearby steps.
+- Fixed Gear Advisor BoE equip prompts so Blizzard's bind confirmation stays open and can be confirmed normally.
+- Added high-ID custom item database warning suppression for unknown server-specific items above the WotLK item range.
+- Closed the automatic NPC target/mark request as not planned because target selection is a protected player action and must remain click-triggered.
+- Updated addon version metadata to 3.0.192.
+
 ### Revision 191 - 3.0.191
 
 - Fixed compatibility with Aux auction addon forks that create a partial global `C_Container` table on WotLK clients.
@@ -202,15 +211,6 @@ This addon is fully open source and can be inspected before use.
 - Fixed AtlasLoot compatibility with `GetItemQualityColor()` so external addon item names no longer show raw quality hex prefixes such as `ffa334eeItem Name`.
 - Added a Gear Finder startup item-cache guard. Opening Gear Finder immediately after login now shows a loading state and auto-scans after item data has had time to load.
 - Updated addon version metadata to 3.0.187.
-
-### Revision 186 - 3.0.186
-
-- Improved Gear Finder recommendations with ranked BiS-Tooltip data for mapped WotLK specs, including stronger Shadow priest pre-raid/T9/T10/RS ordering.
-- Preserved Retail WotLK gear source tables when legacy faction gear files load, preventing missing source-backed upgrades.
-- Improved Gear Finder handling for DB-backed items while the client is still retrieving live item info.
-- Tightened tier-progression behavior with boss-row phase handling for late Vault of Archavon/Toravon-style rows and stricter progression-band pruning.
-- Added `/zgvgeartrace <itemid>` diagnostics for Gear Finder oddities. Users should run it on any suspicious recommendation and send the copied popup text with a screenshot of the finder result.
-- Updated addon version metadata to 3.0.186.
 
 
 ## Notes

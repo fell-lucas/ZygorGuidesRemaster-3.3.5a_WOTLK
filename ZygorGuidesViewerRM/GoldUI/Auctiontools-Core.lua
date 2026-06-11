@@ -598,6 +598,12 @@ local function Appraiser_SetTooltipData(tooltip, itemLink)
 		local statusText = priceStatus.name.." "..priceStatus.sellsuggestion
 		local statusIcon = ZGV.IconSets.AuctionToolsPriceIcons[priceStatus.sellicon or priceStatus.icon].texcoord -- coords
 		local statusColor = priceStatus.sellcolor -- array
+		local global_low = globaltrend and ZGV.GetMoneyString(globaltrend.p_lo)
+		local global_median = globaltrend and ZGV.GetMoneyString(globaltrend.p_md)
+		local global_high = globaltrend and ZGV.GetMoneyString(globaltrend.p_hi)
+		local function addPriceLine(label, value)
+			tooltip:AddDoubleLine("  |cffeeeeee"..label..":|r ", value or "n/a")
+		end
 		
 		if minprice_g then
 			tooltip:AddDoubleLine("  |cffeeeeeeCurrent lowest price:|r ",minprice_g)
@@ -615,35 +621,30 @@ local function Appraiser_SetTooltipData(tooltip, itemLink)
 		if tooltip_detail==2 then -- dynamic
 			
 			local overpricemargin_perc = floor(ZGVG.OVERPRICE*100-100).."%"
-			local gouged_perc = trends_known and floor((minprice-trend.p_hi)/trend.p_hi - 1) * 100 .. "%"
 
-			if statusName=="PRICESTATUS_EMPTY" then
+			if statusName=="PRICESTATUS_EMPTY" and trends_known then
 				tooltip:AddDoubleLine("    |cffeeeeeeHistorical high:|r ",p_hi)
 				tooltip:AddDoubleLine("    |cffeeeeeeGouging by:|r",overpricemargin_perc)
-			elseif statusName=="PRICESTATUS_GOUGED" or statusName=="PRICESTATUS_UP" or statusName=="PRICESTATUS_RISING" then
+			elseif trends_known and (statusName=="PRICESTATUS_GOUGED" or statusName=="PRICESTATUS_UP" or statusName=="PRICESTATUS_RISING") then
 				tooltip:AddDoubleLine("    |cffeeeeeeHistorical high:|r ",p_hi)
-			elseif statusName=="PRICESTATUS_DOWN" or statusName=="PRICESTATUS_FALLING" or statusName=="PRICESTATUS_DUMPED" then
+			elseif trends_known and (statusName=="PRICESTATUS_DOWN" or statusName=="PRICESTATUS_FALLING" or statusName=="PRICESTATUS_DUMPED") then
 				tooltip:AddDoubleLine("    |cffeeeeeeHistorical low:|r ",p_lo)
-			elseif statusName=="PRICESTATUS_NORMAL" then
+			elseif trends_known and statusName=="PRICESTATUS_NORMAL" then
 				if minprice<trend.p_md then  tooltip:AddDoubleLine("    |cffeeeeeeHistorical low:|r ",p_lo)  end
 				if minprice>=trend.p_lo and minprice<=trend.p_hi then  tooltip:AddDoubleLine("    |cffeeeeeeHistorical median:|r ",p_md)  end
 				if minprice>trend.p_md then  tooltip:AddDoubleLine("    |cffeeeeeeHistorical high:|r ",p_hi)  end
-			elseif statusName=="PRICESTATUS_NODATA" then
-				tooltip:AddDoubleLine("    |cffeeeeeeGlobal median:|r ",globaltrend and ZGV.GetMoneyString(globaltrend.p_md) or "n/a")
+			else
+				tooltip:AddDoubleLine("    |cffeeeeeeGlobal median:|r ",global_median or "n/a")
 			end
 		end
 
 		if tooltip_detail==3 then -- full
-			if trends_known then
-				tooltip:AddDoubleLine("  |cffeeeeeeHistorical low:|r ",p_lo)
-				tooltip:AddDoubleLine("  |cffeeeeeeHistorical median:|r ",p_md)
-				tooltip:AddDoubleLine("  |cffeeeeeeHistorical high:|r ",p_hi)
-			end
-			if globaltrend then
-				tooltip:AddDoubleLine("  |cffeeeeeeGlobal low:|r ",ZGV.GetMoneyString(globaltrend.p_lo))
-				tooltip:AddDoubleLine("  |cffeeeeeeGlobal median:|r ",ZGV.GetMoneyString(globaltrend.p_md))
-				tooltip:AddDoubleLine("  |cffeeeeeeGlobal high:|r ",ZGV.GetMoneyString(globaltrend.p_hi))
-			end
+			addPriceLine("Historical low", p_lo)
+			addPriceLine("Historical median", p_md)
+			addPriceLine("Historical high", p_hi)
+			addPriceLine("Global low", global_low)
+			addPriceLine("Global median", global_median)
+			addPriceLine("Global high", global_high)
 		end
 
 		if demand then

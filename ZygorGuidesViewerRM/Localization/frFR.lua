@@ -744,6 +744,8 @@ ZygorGuidesViewer_L("Main", "frFR", function() return {
 	["opt_itemscore_tooltip_value_mode_both"] = "Les deux",
 	["opt_itemscore_tooltip_normalize_score"] = "Normaliser le score de l'objet",
 	["opt_itemscore_tooltip_normalize_score_desc"] = "Met à l'échelle les scores statiques des objets selon la somme des poids de statistiques positifs, comme l'option de valeurs normalisées de Pawn. Cela ne modifie que l'affichage de l'infobulle.",
+	["opt_itemscore_score_sockets"] = "Évaluer les châsses de gemmes",
+	["opt_itemscore_score_sockets_desc"] = "Ajoute une valeur de gemme WotLK prudente aux châsses vides lors de l'évaluation des objets. Cela affecte le chercheur d'équipement et les comparaisons d'objets.",
 	["opt_gear_title"] = "Configurez l'évaluation automatique de l'équipement et la détection des améliorations.",
 	["opt_gear_score_class"] = "Classe :",
 	["opt_gear_score_spec"] = "Spécialisation :",

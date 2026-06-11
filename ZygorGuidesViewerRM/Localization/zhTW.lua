@@ -759,6 +759,8 @@ ZygorGuidesViewer_L("Main", "zhTW", function() return {
 	["opt_itemscore_tooltip_value_mode_both"] = "兩者",
 	["opt_itemscore_tooltip_normalize_score"] = "標準化物品評分",
 	["opt_itemscore_tooltip_normalize_score_desc"] = "依正數屬性權重總和縮放固定物品評分，類似 Pawn 的標準化數值選項。只會變更滑鼠提示顯示。",
+	["opt_itemscore_score_sockets"] = "計算寶石插槽評分",
+	["opt_itemscore_score_sockets_desc"] = "評分物品時為未鑲嵌插槽加入保守的 WotLK 寶石價值。會影響裝備查找與物品比較。",
 	["opt_gear_title"] = "設定自動裝備評分與升級偵測。",
 	["opt_gear_score_class"] = "職業：",
 	["opt_gear_score_spec"] = "專精：",

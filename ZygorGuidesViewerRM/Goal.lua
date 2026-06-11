@@ -30,6 +30,31 @@ local function GetQuestBoundGoalCount(goal, questGoalData)
 	return current, needed
 end
 
+local function RecentTaxiMapMatchesFPath(goal)
+	if not ZGV.recentTaxiMapOpenedAt or not GetTime then return false end
+	if GetTime() - ZGV.recentTaxiMapOpenedAt > 3 then return false end
+
+	local gx,gy,dist = goal.x,goal.y,goal.dist
+	if (not gx or not gy) and goal.parentStep and goal.parentStep.goals then
+		for _,stepgoal in ipairs(goal.parentStep.goals) do
+			if stepgoal.x and stepgoal.y and (stepgoal.action=="goto" or stepgoal==goal) then
+				gx,gy,dist = stepgoal.x,stepgoal.y,stepgoal.dist
+				break
+			end
+		end
+	end
+	if not gx or not gy then return false end
+
+	if SetMapToCurrentZone then SetMapToCurrentZone() end
+	local px,py = GetPlayerMapPosition("player")
+	if not px or not py or (px==0 and py==0) then return false end
+
+	local targetx,targety = gx/100,gy/100
+	local radius = dist and dist/100 or 0.03
+	local realdist2 = (px-targetx)*(px-targetx) + (py-targety)*(py-targety)
+	return realdist2 <= radius*radius
+end
+
 function Goal:GetStatus()
 	if not self:IsVisible() then return "hidden" end
 	if not self:IsCompleteable() then return "passive" end
@@ -346,7 +371,8 @@ function Goal:IsComplete()
 		--return GetBindLocation("player")==self.home, true  -- didn't work well
 		return ZGV.recentlyHomeChanged, true
 	elseif self.action=="fpath" then
-		return (ZGV.db.char.taxis[ZGV.LibTaxi.TaxiNames_English[self.param]] --[[or ZGV.recentlyDiscoveredFlightpath--]]), true
+		local taxi = ZGV.LibTaxi and ZGV.LibTaxi.TaxiNames_English and ZGV.LibTaxi.TaxiNames_English[self.param] or self.param
+		return (ZGV.db.char.taxis[taxi] or ZGV.recentlyDiscoveredFlightpath or RecentTaxiMapMatchesFPath(self)), true
 	elseif self.action=="collect" or self.action=="goldcollect" or self.action=="buy" then
 		local got = GetItemCount(self.target)
 		local progress = got/self.count

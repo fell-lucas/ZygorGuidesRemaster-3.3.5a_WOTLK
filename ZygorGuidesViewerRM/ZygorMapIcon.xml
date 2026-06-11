@@ -55,8 +55,6 @@
 				GameTooltip:SetOwner(this, "BOTTOMLEFT")
 				GameTooltip:SetText(ZygorGuidesViewer.L['name'])
 				GameTooltip:AddLine(ZygorGuidesViewer.L['minimap_tooltip'],0.0,1.0,0.0,1.0)
-				GameTooltip:AddLine("Right-click: Guide Manager",1.0,0.82,0.0,1.0)
-				GameTooltip:AddLine("Shift + Right-click: Options",0.75,0.75,0.75,1.0)
 				GameTooltip:Show()
 			</OnEnter>
 			<OnLeave>

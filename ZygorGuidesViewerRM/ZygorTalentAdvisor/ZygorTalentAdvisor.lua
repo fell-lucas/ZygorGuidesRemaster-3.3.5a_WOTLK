@@ -59,53 +59,16 @@ end
 function me:OnEnable()
 --	hooksecurefunc("TalentFrame_Load",MrRipley_LinkToTalentsFrame)
 	hooksecurefunc("ToggleTalentFrame",function()
-		if not PlayerTalentFrame then return end
-		if not self.hooked then
-			PlayerTalentFrameLearnButton:SetScript("OnClick",ZygorTalentAdvisor_PlayerTalentFrameLearnButton_OnClick)
-
-			ZygorTalentAdvisorPopout_Hook(ZygorTalentAdvisorPopout)
-
-			hooksecurefunc("PlayerTalentFrame_OnHide",function()
-				if self.popout.moving and self.popout:GetParent()==PlayerTalentFrame then
-					self.db.profile.windowdocked = false
-					ZygorTalentAdvisorPopout_Reparent()
-					ZygorTalentAdvisorPopout_UpdateDocking()
-					self.popout.moving=false
-					self.popout:StopMovingOrSizing()
-					self.popout:Show()
-				end
-
-				--[[
-				if self.popout:IsShown() then
-					PlayerTalentFrame.advisorbutton:SetButtonState("PUSHED",1)
-				else
-					PlayerTalentFrame.advisorbutton:SetButtonState("NORMAL")
-				end
-				--]]
-
-				--[[
-				for i=1,MAX_NUM_TALENTS do
-					_G['PlayerTalentFrameTalent'..i]:SetScript("OnClick",ZygorTalentAdvisor_PlayerTalentFrameTalent_OnClick)
-				end
-				--]]
-
-				--[[
-				if not self.hookedreset then
-					self.hookedreset=true
-					--self:Debug("hooked")
-				end
-				if PlayerTalentFrame and PlayerTalentFrame:IsVisible() then
-					self:UpdateSuggestions(PlayerTalentFrame.pet)
-				end
-				--]]
-			end)
-
-			self.hooked=true
-		end
+		self:EnsureTalentFrameHooks()
 		self:RefreshEnabledState()
 	end)
 
-	hooksecurefunc("TalentFrame_Update",function() self:PlayTalented() end)
+	self:HookTalentFrameEvents()
+
+	hooksecurefunc("TalentFrame_Update",function()
+		self:EnsureTalentFrameHooks()
+		self:PlayTalented()
+	end)
 
 	if PlayerTalentFrame_ShowGlyphFrame then
 		hooksecurefunc("PlayerTalentFrame_ShowGlyphFrame",function() self:ShowGlyphSuggestions() end)
@@ -131,6 +94,7 @@ function me:OnEnable()
 	self:RegisterEvent("UNIT_PET")
 	self:RegisterEvent("UNIT_MODEL_CHANGED")
 	self:RegisterEvent("CHAT_MSG_SYSTEM")
+	self:RegisterEvent("ADDON_LOADED")
 
 	StaticPopupDialogs['ZYGORTALENTADVISOR_WARNING'] = {
 		text = "",
@@ -193,27 +157,7 @@ function me:OnEnable()
 	if UnitClass("player") and GetTalentInfo(1,1) then self:PruneRegisteredBuilds() end
 	if select(2,UnitClass("player"))=="HUNTER" then self.petsupport=true end
 
-	-- Restore saved build selection early on each load/reload.
-	if self.db and self.db.char then
-		local idx
-		idx = tonumber(self.db.char.currentBuildIndex)
-		if idx and idx>0 and self.registeredBuilds and self.registeredBuilds[idx] then
-			self:SetCurrentBuild(idx,false)
-		elseif self.db.char.currentBuildTitle and self.db.char.currentBuildTitle~="" then
-			self:SetCurrentBuild(self.db.char.currentBuildTitle,false)
-		elseif self.db.char.currentBuildNone then
-			self:SetCurrentBuild(0,false)
-		end
-
-		idx = tonumber(self.db.char.currentPetBuildIndex)
-		if idx and idx>0 and self.registeredBuilds and self.registeredBuilds[idx] then
-			self:SetCurrentBuild(idx,true)
-		elseif self.db.char.currentPetBuildTitle and self.db.char.currentPetBuildTitle~="" then
-			self:SetCurrentBuild(self.db.char.currentPetBuildTitle,true)
-		elseif self.db.char.currentPetBuildNone then
-			self:SetCurrentBuild(0,true)
-		end
-	end
+	self:RestoreSavedBuildSelection(nil,true)
 
 	self.Log.entries = self.db.char.debuglog
 	self.Log:Add("Viewer started. ---------------------------")
@@ -236,9 +180,12 @@ end
 
 function me:EnsureAdvisorButton()
 	if not PlayerTalentFrame or not ZygorTalentAdvisorPopoutButton then return nil end
-	if not PlayerTalentFrame.advisorbutton then
+	if not PlayerTalentFrame.advisorbutton or PlayerTalentFrame.advisorbutton ~= ZygorTalentAdvisorPopoutButton then
 		ZygorTalentAdvisorPopoutButton:SetParent(PlayerTalentFrame)
 		PlayerTalentFrame.advisorbutton = ZygorTalentAdvisorPopoutButton
+	end
+	if PlayerTalentFrame.advisorbutton:GetParent() ~= PlayerTalentFrame then
+		PlayerTalentFrame.advisorbutton:SetParent(PlayerTalentFrame)
 	end
 	PlayerTalentFrame.advisorbutton:ClearAllPoints()
 	PlayerTalentFrame.advisorbutton:SetPoint("TOPRIGHT",-44,-39)
@@ -246,7 +193,58 @@ function me:EnsureAdvisorButton()
 	return PlayerTalentFrame.advisorbutton
 end
 
+function me:HookTalentFrameEvents()
+	if PlayerTalentFrame_OnShow and not self.talentFrameShowHooked then
+		hooksecurefunc("PlayerTalentFrame_OnShow",function()
+			self:EnsureTalentFrameHooks()
+			self:RestoreSavedBuildSelection(PlayerTalentFrame and PlayerTalentFrame.pet,true)
+			self:RefreshEnabledState()
+		end)
+		self.talentFrameShowHooked = true
+	end
+
+	if PlayerTalentFrame_Refresh and not self.talentFrameRefreshHooked then
+		hooksecurefunc("PlayerTalentFrame_Refresh",function()
+			self:EnsureTalentFrameHooks()
+			self:RestoreSavedBuildSelection(PlayerTalentFrame and PlayerTalentFrame.pet,true)
+			self:PlayTalented()
+		end)
+		self.talentFrameRefreshHooked = true
+	end
+end
+
+function me:EnsureTalentFrameHooks()
+	if not PlayerTalentFrame then return end
+
+	if PlayerTalentFrameLearnButton and PlayerTalentFrameLearnButton:GetScript("OnClick") ~= ZygorTalentAdvisor_PlayerTalentFrameLearnButton_OnClick then
+		PlayerTalentFrameLearnButton:SetScript("OnClick",ZygorTalentAdvisor_PlayerTalentFrameLearnButton_OnClick)
+	end
+
+	if ZygorTalentAdvisorPopout and not self.popoutHooked then
+		ZygorTalentAdvisorPopout_Hook(ZygorTalentAdvisorPopout)
+		self.popoutHooked = true
+	end
+
+	if PlayerTalentFrame_OnHide and not self.talentFrameHideHooked then
+		hooksecurefunc("PlayerTalentFrame_OnHide",function()
+			if self.popout and self.popout.moving and self.popout:GetParent()==PlayerTalentFrame then
+				self.db.profile.windowdocked = false
+				ZygorTalentAdvisorPopout_Reparent()
+				ZygorTalentAdvisorPopout_UpdateDocking()
+				self.popout.moving=false
+				self.popout:StopMovingOrSizing()
+				self.popout:Show()
+			end
+		end)
+		self.talentFrameHideHooked = true
+	end
+
+	self.hooked = true
+end
+
 function me:RefreshEnabledState()
+	self:EnsureTalentFrameHooks()
+	self:RestoreSavedBuildSelection(PlayerTalentFrame and PlayerTalentFrame.pet,true)
 	if self:IsAdvisorEnabled() then
 		if PlayerTalentFrame and PlayerTalentFrame:IsVisible() then
 			local button = self:EnsureAdvisorButton()
@@ -283,10 +281,20 @@ function me:CHAT_MSG_SYSTEM(event,text)
 	--]]
 end
 
+function me:ADDON_LOADED(_,addon)
+	if addon == "Blizzard_TalentUI" then
+		self:HookTalentFrameEvents()
+		self:EnsureTalentFrameHooks()
+		self:RestoreSavedBuildSelection(PlayerTalentFrame and PlayerTalentFrame.pet,true)
+		self:RefreshEnabledState()
+	end
+end
+
 function me:PLAYER_ALIVE()
 	-- fires when talents are available
 	self:Debug("PLAYER_ALIVE")
 	self:PruneRegisteredBuilds()
+	self:RestoreSavedBuildSelection(nil,true)
 end
 
 function me:PLAYER_TALENT_UPDATE(_,a)
@@ -354,6 +362,90 @@ end
 
 local function who(pet)
 	return pet and 'pet' or 'player'
+end
+
+local function TalentInfoReady(pet)
+	if TalentFrame_LoadUI then TalentFrame_LoadUI() end
+	local tabs = GetNumTalentTabs(false,pet) or 0
+	if tabs <= 0 then return false end
+	return GetTalentInfo(1,1,false,pet) and true or false
+end
+
+local function BuildMatchesTarget(build,pet,class)
+	if not build then return false end
+	if pet then
+		return build.pettype and true or false
+	end
+	return not build.pettype and (not build.class or build.class==class)
+end
+
+function me:FindSavedBuildIndex(pet)
+	if not self.db or not self.db.char or not self.registeredBuilds then return nil end
+	local db = self.db.char
+	local _,class = UnitClass("player")
+	local idx = tonumber(pet and db.currentPetBuildIndex or db.currentBuildIndex)
+	if idx and idx>0 and BuildMatchesTarget(self.registeredBuilds[idx],pet,class) then
+		return idx
+	end
+
+	local title = pet and db.currentPetBuildTitle or db.currentBuildTitle
+	if not title or title=="" then return nil end
+	for i,build in ipairs(self.registeredBuilds) do
+		if build.title==title and BuildMatchesTarget(build,pet,class) then
+			return i
+		end
+	end
+	return nil
+end
+
+function me:ScheduleSavedBuildRestore()
+	if self.savedBuildRestoreTimer or not self.ScheduleTimer then return end
+	self.savedBuildRestoreTimer = self:ScheduleTimer(function()
+		self.savedBuildRestoreTimer = nil
+		self:RestoreSavedBuildSelection(nil,true)
+		if PlayerTalentFrame and PlayerTalentFrame:IsVisible() then
+			self:RefreshEnabledState()
+		end
+	end, 0.5)
+end
+
+function me:RestoreSavedBuildSelection(pet,allowRetry)
+	if not self.db or not self.db.char then return false end
+	if not self.registeredBuilds or #self.registeredBuilds==0 then
+		if allowRetry then self:ScheduleSavedBuildRestore() end
+		return false
+	end
+
+	if pet==nil then
+		local player = self:RestoreSavedBuildSelection(false,allowRetry)
+		local petok = true
+		if self.petsupport then petok = self:RestoreSavedBuildSelection(true,allowRetry) end
+		return player or petok
+	end
+
+	local key = who(pet)
+	if self.currentBuild[key] then
+		return true
+	end
+
+	local idx = self:FindSavedBuildIndex(pet)
+	if not idx then
+		if pet and self.db.char.currentPetBuildNone then
+			self:SetCurrentBuild(0,true)
+			return true
+		elseif not pet and self.db.char.currentBuildNone then
+			self:SetCurrentBuild(0,false)
+			return true
+		end
+		return false
+	end
+	if not TalentInfoReady(pet) then
+		if allowRetry then self:ScheduleSavedBuildRestore() end
+		return false
+	end
+
+	self:SetCurrentBuild(idx,pet)
+	return self.currentBuild[key] and true or false
 end
 
 

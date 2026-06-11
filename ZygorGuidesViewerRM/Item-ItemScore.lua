@@ -437,6 +437,7 @@ local bit_band = (bit and bit.band) or (bit32 and bit32.band)
 local missing_itemdb_warnings = {}
 local missing_itemdb_pending = {}
 local missing_itemdb_flush_timer = nil
+local MISSING_ITEMDB_WARN_MAX_ID = 69999
 ItemScore.DBStats = ItemScore.DBStats or { primed = 0, dbonly = 0, live = 0, missing = 0 }
 local db_primed_seen = {}
 local db_only_seen = {}
@@ -528,6 +529,10 @@ end
 
 local function should_warn_missing_itemdb(itemLinkOrID, itemID)
 	if not itemID then return false end
+	itemID = tonumber(itemID)
+	if not itemID or itemID > MISSING_ITEMDB_WARN_MAX_ID then
+		return false
+	end
 	local _, _, _, _, _, _, _, _, equipLoc = GetItemInfo(itemLinkOrID or itemID)
 	if not equipLoc or equipLoc == "" then
 		return false

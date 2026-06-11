@@ -86,29 +86,8 @@ function me:PruneRegisteredBuilds()
 		end
 	end
 
-	if #self.registeredBuilds>0 then
-		local idx
-		local _,myclass = UnitClass("player")
-		idx = tonumber(self.db.char.currentBuildIndex)
-		local canUsePlayerIndex = idx and idx>0 and self.registeredBuilds[idx]
-			and not self.registeredBuilds[idx].pettype
-			and (not self.registeredBuilds[idx].class or self.registeredBuilds[idx].class==myclass)
-		if canUsePlayerIndex then
-			self:SetCurrentBuild(idx,false)
-		elseif self.db.char.currentBuildTitle then
-			self:SetCurrentBuild(self.db.char.currentBuildTitle)
-		end
-
-		idx = tonumber(self.db.char.currentPetBuildIndex)
-		local canUsePetIndex = idx and idx>0 and self.registeredBuilds[idx] and self.registeredBuilds[idx].pettype
-		if canUsePetIndex then
-			self:SetCurrentBuild(idx,true)
-		elseif self.db.char.currentPetBuildTitle then
-			self:SetCurrentBuild(self.db.char.currentPetBuildTitle)
-		end
-	end
-
 	self.registeredBuildsPruned = true
+	self:RestoreSavedBuildSelection(nil,true)
 end
 
 function me:ParseBlizzardTalents(bliz,pet)

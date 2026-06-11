@@ -60,6 +60,20 @@ end
 
 Upgrades.UniqueEquipped = {}
 
+local BOE_CONFIRM_DIALOGS = {
+	EQUIP_BIND = true,
+}
+
+local function is_boe_confirm_visible()
+	if not StaticPopup_Visible then return false end
+	for dialog in pairs(BOE_CONFIRM_DIALOGS) do
+		if StaticPopup_Visible(dialog) then
+			return true
+		end
+	end
+	return false
+end
+
 local function apply_font(fontstring, fontpath, size, flags)
 	if not fontstring then return end
 	if fontpath and fontstring:SetFont(fontpath, size, flags) then return end
@@ -2310,7 +2324,7 @@ function Upgrades:ShowEquipmentChangePopup(slot)
 	F.secureacceptbutton:SetText("Equip")
 	F.secureacceptbutton:SetAttribute("type", "macro")
 	F.secureacceptbutton:SetAttribute("macrotext", build_equip_macro())
-	if n_item.frombank then
+	if n_item.frombank or bindState == "boe" then
 		F.secureacceptbutton:Hide()
 		F.acceptbutton:Show()
 		F.acceptbutton:SetText("Equip")
@@ -2501,7 +2515,7 @@ function Upgrades:Equip(item,retry)
 		return not CursorHasItem()
 	end
 
-	local function equip_container_item(bagnum, bagslot, slot, expectedLink, frombank)
+	local function equip_container_item(bagnum, bagslot, slot, expectedLink, frombank, isBoE)
 		if not (bagnum and bagslot) then return false end
 		local bagLink = GetContainerItemLink(bagnum, bagslot)
 		local link = bagLink or expectedLink
@@ -2526,14 +2540,30 @@ function Upgrades:Equip(item,retry)
 
 		if not frombank and EquipItemByName then
 			EquipItemByName(link, slot)
+			if isBoE and is_boe_confirm_visible() then
+				debug_equip(("waiting for BoE bind confirmation after EquipItemByName slot=%s item=%s"):format(tostring(slot), tostring(link)))
+				return "pending_boe"
+			end
 			if not equipped_now() and itemName then
 				EquipItemByName(itemName, slot)
+				if isBoE and is_boe_confirm_visible() then
+					debug_equip(("waiting for BoE bind confirmation after EquipItemByName slot=%s item=%s"):format(tostring(slot), tostring(link)))
+					return "pending_boe"
+				end
 			end
 			if not equipped_now() then
 				EquipItemByName(link)
+				if isBoE and is_boe_confirm_visible() then
+					debug_equip(("waiting for BoE bind confirmation after EquipItemByName slot=%s item=%s"):format(tostring(slot), tostring(link)))
+					return "pending_boe"
+				end
 			end
 			if not equipped_now() and itemName then
 				EquipItemByName(itemName)
+				if isBoE and is_boe_confirm_visible() then
+					debug_equip(("waiting for BoE bind confirmation after EquipItemByName slot=%s item=%s"):format(tostring(slot), tostring(link)))
+					return "pending_boe"
+				end
 			end
 		end
 		local afterEquipped = equipped_now()
@@ -2544,6 +2574,10 @@ function Upgrades:Equip(item,retry)
 
 		if not frombank and UseContainerItem then
 			UseContainerItem(bagnum, bagslot)
+			if isBoE and is_boe_confirm_visible() then
+				debug_equip(("waiting for BoE bind confirmation after UseContainerItem slot=%s item=%s"):format(tostring(slot), tostring(link)))
+				return "pending_boe"
+			end
 			afterEquipped = equipped_now()
 			if afterEquipped then
 				debug_equip(("equipped via UseContainerItem slot=%s item=%s"):format(tostring(slot), tostring(link)))
@@ -2591,14 +2625,22 @@ function Upgrades:Equip(item,retry)
 		return equipped
 	end
 
-	local equippedMain = equip_container_item(item.bagnum, item.bagslot, item.slot, item.itemlink, item.frombank)
+	local bindState = get_item_bind_state(item.itemlinkfull or item.itemlink, item.bagnum, item.bagslot)
+	local isBoE = bindState == "boe"
+	local equippedMain = equip_container_item(item.bagnum, item.bagslot, item.slot, item.itemlink, item.frombank, isBoE)
+	if equippedMain == "pending_boe" then
+		return true
+	end
 	local equippedPair = true
 	if item.pair and not item.twohand then
-		equippedPair = equip_container_item(item.pair.bagnum, item.pair.bagslot, item.pair.slot or item.pair.slot_2, item.pair.itemlink, item.pair.frombank)
+		local pairBindState = get_item_bind_state(item.pair.itemlinkfull or item.pair.itemlink, item.pair.bagnum, item.pair.bagslot)
+		equippedPair = equip_container_item(item.pair.bagnum, item.pair.bagslot, item.pair.slot or item.pair.slot_2, item.pair.itemlink, item.pair.frombank, pairBindState == "boe")
+		if equippedPair == "pending_boe" then
+			return true
+		end
 	end
 
 	if not equippedMain or not equippedPair then
-		local bindState = get_item_bind_state(item.itemlinkfull or item.itemlink, item.bagnum, item.bagslot)
 		local cooldownKey = cooldown_key(item.itemlink)
 		if bindState ~= "boe" then
 			Upgrades.EquipFailureCooldown[cooldownKey] = GetTime() + 5

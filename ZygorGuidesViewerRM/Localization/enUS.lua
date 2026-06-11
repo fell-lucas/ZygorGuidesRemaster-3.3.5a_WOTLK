@@ -235,8 +235,23 @@ ZygorGuidesViewer_L("Main", "enUS", function() return {
 	['opt_mute_chat'] = "Mute addon chat spam",
 	['opt_mute_chat_desc'] = "Silence all addon status messages in chat window.",
 
-	['opt_gold_tooltips_show'] = "Show Gold vendor prices in tooltips",
-	['opt_gold_tooltips_show_desc'] = "Append vendor sell prices and market status to item tooltips.",
+	['opt_gold_tooltips_header'] = "Zygor Gold tooltip prices",
+	['opt_gold_tooltips_show'] = "Show Gold price data on item tooltips",
+	['opt_gold_tooltips_show_desc'] = "Append vendor sell prices, auction prices, and market status to item tooltips.",
+	['opt_gold_tooltips_out'] = "Normal item tooltips",
+	['opt_gold_tooltips_out_desc'] = "Choose how much Zygor Gold pricing appears on item tooltips outside the Auction House.",
+	['opt_gold_tooltips_ah'] = "Auction House item tooltips",
+	['opt_gold_tooltips_ah_desc'] = "Choose how much Zygor Gold pricing appears on item tooltips while the Auction House is open.",
+	['opt_gold_tooltips_shift'] = "Show full details while holding Shift",
+	['opt_gold_tooltips_shift_desc'] = "Holding Shift temporarily expands Zygor Gold item tooltip pricing to the full detail level.",
+	['opt_gold_tooltips_guide'] = "Gold guide row tooltips",
+	['opt_gold_tooltips_guide_desc'] = "Choose when Gold Guide rows show their pricing tooltips.",
+	['opt_gold_tooltips_off'] = "Off",
+	['opt_gold_tooltips_basic'] = "Basic",
+	['opt_gold_tooltips_dynamic'] = "Market details",
+	['opt_gold_tooltips_full'] = "Full",
+	['opt_gold_tooltips_shift_only'] = "Shift only",
+	['opt_gold_tooltips_always'] = "Always",
 
 	-- Gold Guide options
 
@@ -263,7 +278,7 @@ ZygorGuidesViewer_L("Main", "enUS", function() return {
 	["opt_mapbutton"] = "Show minimap button",
 	["opt_mapbutton_desc"] = "Show the Zygor Guides Viewer button next to your minimap",
 
-	["minimap_tooltip"] = COLOR_TIP_MOUSE.."Click|r to toggle guide window|n"..COLOR_TIP_MOUSE.."Right-click|r to configure|n", --..COLOR_TIP_MOUSE.."Drag|r to move icon"
+	["minimap_tooltip"] = COLOR_TIP_MOUSE.."Click|r to toggle guide window|n"..COLOR_TIP_MOUSE.."Right-click|r to open Guide Manager|n"..COLOR_TIP_MOUSE.."Shift + Right-click|r to open Options|n"..COLOR_TIP_MOUSE.."Drag|r to move icon",
 
 
 	["waypointaddon_set"] = "Waypointing addon selected: %s",
@@ -810,6 +825,8 @@ ZygorGuidesViewer_L("Main", "enUS", function() return {
 	["opt_itemscore_tooltip_value_mode_both"] = "Both",
 	["opt_itemscore_tooltip_normalize_score"] = "Normalize Item Score",
 	["opt_itemscore_tooltip_normalize_score_desc"] = "Scale static item score values by the total positive stat weights, similar to Pawn's normalized values option. This only changes tooltip display.",
+	["opt_itemscore_score_sockets"] = "Score Gem Sockets",
+	["opt_itemscore_score_sockets_desc"] = "Add conservative WotLK gem value to empty sockets when scoring items. This affects Gear Finder and item comparisons.",
 	["opt_gear_title"] = "Configure automatic gear scoring and upgrade detection.",
 	["opt_gear_score_class"] = "Class:",
 	["opt_gear_score_spec"] = "Spec:",

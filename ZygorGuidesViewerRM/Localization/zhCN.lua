@@ -761,6 +761,8 @@ ZygorGuidesViewer_L("Main", "zhCN", function() return {
 	["opt_itemscore_tooltip_value_mode_both"] = "两者",
 	["opt_itemscore_tooltip_normalize_score"] = "标准化物品评分",
 	["opt_itemscore_tooltip_normalize_score_desc"] = "按正数属性权重总和缩放静态物品评分，类似 Pawn 的标准化数值选项。只会更改鼠标提示显示。",
+	["opt_itemscore_score_sockets"] = "计算宝石插槽评分",
+	["opt_itemscore_score_sockets_desc"] = "评分物品时为未镶嵌插槽加入保守的 WotLK 宝石价值。会影响装备查找和物品比较。",
 	["opt_gear_title"] = "配置自动装备评分和升级检测。",
 	["opt_gear_score_class"] = "职业：",
 	["opt_gear_score_spec"] = "专精：",

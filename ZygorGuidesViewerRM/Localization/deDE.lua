@@ -893,6 +893,8 @@ ZygorGuidesViewer_L("Main", "deDE", function() return {
     ["opt_itemscore_tooltip_value_mode_both"] = "Beides",
     ["opt_itemscore_tooltip_normalize_score"] = "Gegenstandswert normalisieren",
     ["opt_itemscore_tooltip_normalize_score_desc"] = "Skaliert statische Gegenstandswerte durch die Summe der positiven Stat Weights, ähnlich wie Pawns Option für normalisierte Werte. Ändert nur die Tooltip-Anzeige.",
+    ["opt_itemscore_score_sockets"] = "Edelsteinplätze bewerten",
+    ["opt_itemscore_score_sockets_desc"] = "Fügt leeren Sockeln beim Bewerten von Gegenständen einen konservativen WotLK-Edelsteinwert hinzu. Dies beeinflusst Ausrüstungs-Finder und Gegenstandsvergleiche.",
     ["opt_gear_title"] = "Konfiguriere automatische Ausrüstungsbewertung und Verbesserungserkennung.",
     ["opt_gear_score_class"] = "Klasse:",
     ["opt_gear_score_spec"] = "Spec:",

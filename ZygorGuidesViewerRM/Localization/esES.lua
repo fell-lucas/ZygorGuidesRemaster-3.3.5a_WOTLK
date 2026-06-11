@@ -735,6 +735,8 @@ ZygorGuidesViewer_L("Main", "esES", function() return {
 	["opt_itemscore_tooltip_value_mode_both"] = "Ambos",
 	["opt_itemscore_tooltip_normalize_score"] = "Normalizar puntuación del objeto",
 	["opt_itemscore_tooltip_normalize_score_desc"] = "Escala las puntuaciones estáticas del objeto por la suma de los pesos de estadísticas positivos, similar a la opción de valores normalizados de Pawn. Solo cambia la visualización del tooltip.",
+	["opt_itemscore_score_sockets"] = "Puntuar ranuras de gemas",
+	["opt_itemscore_score_sockets_desc"] = "Añade un valor conservador de gema de WotLK a las ranuras vacías al puntuar objetos. Afecta al buscador de equipo y a las comparaciones de objetos.",
 	["opt_gear_title"] = "Configura la puntuación automática del equipo y la detección de mejoras.",
 	["opt_gear_score_class"] = "Clase:",
 	["opt_gear_score_spec"] = "Especialización:",

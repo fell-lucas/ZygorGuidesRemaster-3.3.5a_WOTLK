@@ -2224,9 +2224,6 @@ do
 				me:ActionButtons_UpdateManualDrag(frame)
 				return
 			end
-			if me.framemoving and frame.snapped and not frame:IsDragging() then
-				me:ActionButtons_ApplyAnchorThrottled(elapsed)
-			end
 		end)
 		bar:RegisterForDrag("LeftButton")
 		bar.close = CreateFrame("Button", nil, bar)
@@ -3992,6 +3989,8 @@ function me:OnEnable()
 	self:AddEvent("CHAT_MSG_COMBAT_XP_GAIN","LiveProgressEvent")
 	self:AddEvent("QUEST_LOG_UPDATE","LiveProgressEvent")
 	self:AddEvent("QUEST_WATCH_UPDATE","LiveProgressEvent")
+	self:AddEvent("UI_INFO_MESSAGE")
+	self:AddEvent("TAXIMAP_OPENED")
 
 	-- combat detection for hiding in combat
 	self:AddEvent("PLAYER_REGEN_DISABLED")
@@ -4360,6 +4359,7 @@ function me:ClearRecentActivities()
 	self.recentCooldownsStarted = {}
 	self.recentlyHomeChanged = false
 	self.recentlyDiscoveredFlightpath = false
+	self.recentTaxiMapOpenedAt = nil
 	self.recentlyLearnedRecipes = {}
 	self.recentKills = {}
 	self.completedQuestTitles = {}
@@ -7936,6 +7936,27 @@ function me:LiveProgressEvent()
 	if not self.CurrentStep then return end
 	if not self.Frame or not self.Frame:IsVisible() then return end
 	self:TryToCompleteStep(true)
+end
+
+function me:UI_INFO_MESSAGE(event,message)
+	if message == ERR_NEWTAXIPATH then
+		self.recentlyDiscoveredFlightpath = true
+		self:TryToCompleteStep(true)
+	end
+end
+
+function me:TAXIMAP_OPENED()
+	if not self.CurrentStep then return end
+	self.recentTaxiMapOpenedAt = GetTime and GetTime() or 0
+	if self.ScheduleTimer then
+		self:ScheduleTimer(function()
+			if ZGV and ZGV.CurrentStep then
+				ZGV:TryToCompleteStep(true)
+			end
+		end, 0.2)
+	else
+		self:TryToCompleteStep(true)
+	end
 end
 
 local blobstate=nil

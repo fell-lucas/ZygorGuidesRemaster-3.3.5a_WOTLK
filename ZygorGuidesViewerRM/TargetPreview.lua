@@ -34,6 +34,14 @@ local function TP_GetModelCamDistance(unit)
 	return PREVIEW_TARGET_CAM_DISTANCE
 end
 
+local function TP_ResetModelTransform(model)
+	if not model then return end
+	if model.SetModelScale then pcall(model.SetModelScale, model, 1) end
+	if model.SetPosition then pcall(model.SetPosition, model, 0, 0, 0) end
+	if model.SetCamera then pcall(model.SetCamera, model, 0) end
+	if model.RefreshCamera then pcall(model.RefreshCamera, model) end
+end
+
 local function TP_ApplyIcon(texture, icon)
 	if not texture then return end
 	if type(icon) == "table" then
@@ -586,6 +594,7 @@ function me:TargetPreview_ShowModel(subject)
 	if frame.modelSubjectKey ~= subjectKey then
 		if model.ClearModel then model:ClearModel() end
 		model:SetUnit("target")
+		TP_ResetModelTransform(model)
 		if model.SetCamDistanceScale then
 			local scale = TP_GetModelCamDistance("target")
 			pcall(model.SetCamDistanceScale, model, scale)

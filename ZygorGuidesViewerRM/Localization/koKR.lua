@@ -636,6 +636,8 @@ ZygorGuidesViewer_L("Main", "koKR", function() return {
 	["opt_itemscore_tooltip_value_mode_both"] = "둘 다",
 	["opt_itemscore_tooltip_normalize_score"] = "아이템 점수 정규화",
 	["opt_itemscore_tooltip_normalize_score_desc"] = "Pawn의 정규화 값 옵션과 비슷하게 고정 아이템 점수를 양수 능력치 가중치 합계로 나눠 표시합니다. 툴팁 표시만 변경합니다.",
+	["opt_itemscore_score_sockets"] = "보석 홈 점수 반영",
+	["opt_itemscore_score_sockets_desc"] = "아이템 점수 계산 시 빈 홈에 보수적인 WotLK 보석 값을 더합니다. 장비 찾기와 아이템 비교에 영향을 줍니다.",
 	["opt_gear_title"] = "자동 장비 점수 계산과 업그레이드 감지를 설정합니다.",
 	["opt_gear_score_class"] = "직업:",
 	["opt_gear_score_spec"] = "전문화:",
